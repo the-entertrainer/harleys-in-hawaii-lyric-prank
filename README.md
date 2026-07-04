@@ -56,6 +56,22 @@ toggle, no progress bar. Nothing to configure or get right.
   whichever line is current, and a gentle sine-wave bob on every doodle
   mean the page never reads as a static screenshot, even mid-line, even
   during the ~15s instrumental coda.
+- **No two consecutive lines move the same way.** Every line is assigned
+  one of six transition recipes (`rise`, `zoom`, `skew`, `blur`, `drift`,
+  `bounce`), cycled so adjacent lines never repeat — some grow in from
+  small, some skew and settle upright, some blur into focus, some drift
+  in sideways, one overshoots and bounces on arrival. The anticipation
+  positioning (next line rising, previous receding) stays the same for
+  all of them; only the *manner* of arrival differs.
+- **A randomized pink accent.** A curated set of emotionally-loaded words
+  (sweetheart, love, true, dreaming, moonlight, whisper…) has a high but
+  not guaranteed chance of turning `--accent` pink instead of ink black,
+  re-rolled on every play-through — so the highlighted words are never
+  quite the same twice, and they never land on throwaway function words
+  like "the" or "on."
+- **A real ending, not a silent reset.** When the song actually finishes,
+  a heart doodle draws itself in and "From Naveen, with love" fades up in
+  the same pink accent, held until you tap play again.
 
 ## The math (still the soul of it)
 
@@ -85,6 +101,18 @@ than a plain circle), the "doodles sit behind text, faint, textural"
 layering rule, and the paper/ink monochrome palette. Nothing from Stitch
 was copied verbatim into the shipped code; it was used the way a mood
 board or reference render is used, then hand-implemented here.
+
+**Why not Theatre.js:** it was considered for the multi-variant
+transitions below. Theatre.js's real value is its Studio — a visual
+timeline editor you scrub by hand to set keyframes, which then exports a
+state JSON you bake into the page. There's no visual editor available in
+the environment this was built in, so using it would have meant
+hand-writing that keyframe JSON blind, which defeats the point of the
+tool. It's also built around discrete triggered tweens, while this page's
+engine is one continuous function of real playback time — a structural
+mismatch either way. The variant system below gets the same practical
+result (varied, non-uniform per-line transitions) as plain per-frame math
+in the existing engine, with no new dependency.
 
 ## Run locally
 

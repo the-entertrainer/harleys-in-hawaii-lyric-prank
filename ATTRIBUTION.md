@@ -65,6 +65,16 @@ tulip — were reworked after the first render didn't read clearly as their
 intended shape) before being inlined as SVG `<symbol>` markup. Because
 they're vector paths, transparency is native — nothing needed matting.
 
+The jitter amounts were revisited once already: the first pass looked
+sloppy rather than hand-sketched (a visibly stray line off the rose's
+leaf, unevenly wobbled petals), so every jitter parameter was reduced
+substantially and the rose's spiral was rewritten to draw as one smooth
+continuous stroke connected directly to its stem instead of two
+disjointed pieces. The small heart used only in the end-of-song "From
+Naveen, with love" reveal is a single hand-written path (not run through
+the parametric generator, since it's a one-off rather than a repeated
+motif) — still hand-authored vector, still not sourced from anywhere.
+
 **A note on what was deliberately *not* used:** an earlier direction for
 this project referenced a Dreamstime stock-photo composite of vintage
 flower illustrations. It was never used as an asset source at any point
