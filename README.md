@@ -1,157 +1,115 @@
-# Let Me Call You Sweetheart — An Ink-Doodle Lyric Page
+# My Sweetheart
 
-A single-page lyric experience for a genuinely public-domain 1910 love
-song. There is exactly one control: a liquid ink-blob play button. Press
-it. Every word lights up in ink, one at a time, at the exact instant it's
-actually sung — huge bold handwritten type on a plain paper background,
-the next line already rising into view below before it arrives, the
-previous one fading away above. No intro screen, no instructions, no mode
-toggle, no progress bar. Nothing to configure or get right.
+A single-page lyric experience for a genuinely public-domain 1910 love song,
+choreographed with [Theatre.js](https://www.theatrejs.com/). There is exactly
+one control: a play button. Press it. Every word lights up in real time, one
+at a time, at the exact instant it's actually sung, while each line and its
+accent image glide, zoom, tilt, or drift on and off screen — the motion for
+every line is a real Theatre.js keyframe sequence, not hand-rolled per-frame
+math.
 
 ## What's actually in this build
 
-- **Real audio, real timing, down to the word.** `audio/let-me-call-you-sweetheart.mp3`
-  is a 1924 Jubileers vocal-quartet recording of the fully public-domain
-  1910 song "Let Me Call You Sweetheart" (Leo Friedman / Beth Slater
-  Whitson), digitized and hosted by the Internet Archive. Every lyric
-  *and every word* in `index.html`'s `LYRICS` array carries its own
-  start/end timestamp, produced by running
-  [faster-whisper](https://github.com/SYSTRAN/faster-whisper) with
-  word-level timestamps directly on that recording — it's
-  transcription-grounded to the actual waveform, not guessed, and not
-  just line-level: each word underlines itself in ink at the moment it's
-  sung, using its own real timestamp, not an evenly-spaced guess.
-- **A continuous "teleprompter" stage, not a long scroll.** Every line
-  lives at a fixed position on screen the whole song; each frame,
-  `renderFrame()` places it by how far `audio.currentTime` is from that
-  line's own `[start, end]` window — 0 while you're inside it (however
-  long that line lasts), counting down while it's upcoming, counting away
-  once it's passed. That's what makes the next line visibly rise into
-  place before it arrives (the anticipation) and the previous one recede
-  instead of just vanishing.
-- **Every flower doodle is procedurally generated, not sourced.** There
-  are no image assets at all beyond the audio and a tiny paper-grain
-  texture. Instead, `index.html` embeds ~18 hand-crafted SVG line-doodle
-  symbols (daisy, rose, fern, tulip, wildflower, berry branch, tendril…),
-  built from parametric bezier curves with organic per-point jitter so
-  they read as sketched, not vector-perfect. Each one is anchored to, and
-  moves/fades with, its own line rather than sitting in a static corner.
-  Real, native transparency; zero licensing question. See `ATTRIBUTION.md`
-  for the full method and for why an earlier stock-photo reference handed
-  to this project was deliberately *not* used (visible Dreamstime
-  watermark = not rights-clear).
-- **One control, designed with intent.** The play/pause button is an
-  organic ink-blob shape (its own generated bezier path, not a plain
-  circle) with a gentle idle "breathing" animation, a squash-and-twist
-  press response, an ink-ripple burst on tap, and a rotating icon
-  cross-fade between play and pause.
-- **Doodles draw themselves in, in step with the countdown.** Each doodle
-  is cloned into the page as real `<path>`/`<circle>` elements (not
-  `<use>`, so each stroke's actual length is measurable), given a
-  `stroke-dasharray` equal to its own length, and revealed via
-  `stroke-dashoffset` a couple of seconds before its line arrives — the
-  drawing-in *is* part of the anticipation, not a separate effect.
-- **Nothing sits frozen.** A slow breathing ambient glow, a thin ink-fill
-  edge that tracks overall progress, a subtle continuous scale-breathe on
-  whichever line is current, and a gentle sine-wave bob on every doodle
-  mean the page never reads as a static screenshot, even mid-line, even
-  during the ~15s instrumental coda.
-- **No two consecutive lines move the same way.** Every line is assigned
-  one of six transition recipes (`rise`, `zoom`, `skew`, `blur`, `drift`,
-  `bounce`), cycled so adjacent lines never repeat — some grow in from
-  small, some skew and settle upright, some blur into focus, some drift
-  in sideways, one overshoots and bounces on arrival. The anticipation
-  positioning (next line rising, previous receding) stays the same for
-  all of them; only the *manner* of arrival differs.
+- **Real audio, real timing, down to the word — unchanged from before.**
+  `audio/let-me-call-you-sweetheart.mp3` is a 1924 Jubileers vocal-quartet
+  recording of the fully public-domain 1910 song "Let Me Call You Sweetheart"
+  (Leo Friedman / Beth Slater Whitson). Every lyric and every word in
+  `lyrics-data.mjs`'s `LYRICS` array carries its own start/end timestamp,
+  produced by running [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
+  with word-level timestamps directly on that recording. See
+  `ATTRIBUTION.md` for the full method.
+- **Every line's motion is a real Theatre.js sequence.** `@theatre/core`
+  drives position/opacity/scale/rotation/blur for every lyric line, its
+  accent image, and a few ambient floaters, via `assets/theatre-state.json`
+  — an on-disk Theatre.js project state (the same format Theatre.js Studio
+  itself exports). `index.html` does nothing more than scrub
+  `sheet.sequence.position` to `audio.currentTime` every frame and apply
+  whatever each object's `onValuesChange` hands back — no custom easing math
+  lives in the page anymore. See `tools/build-theatre-state.mjs` for why that
+  file is generated by a script rather than authored by hand in Theatre.js
+  Studio's visual editor (short version: there's no display to run Studio's
+  UI against in a headless build environment, and — as of Theatre.js 0.7 —
+  there's no supported public API for creating sequenced keyframes from code
+  either). `@theatre/core` itself ships to visitors; `@theatre/studio` does
+  not.
+- **No hand-drawn doodles.** Every decorative image is either an animated,
+  transparent-background GIF (GIPHY stickers) or a transparent PNG (OpenMoji,
+  CC BY 4.0) — real files sourced from the web, not procedurally generated or
+  illustrated for this project. See `ATTRIBUTION.md` for the full list and
+  sources.
+- **Six per-line motion variants**, cycled so adjacent lines never repeat:
+  `rise`, `zoom`, `skew`, `blur`, `drift`, `bounce`. Each is a distinct
+  Theatre.js keyframe recipe (entrance pose → arrival, with a brief
+  overshoot-and-settle for `bounce` → hold → exit pose), so the "next line
+  already rising, previous line fading" staging from the earlier build
+  survives, but every transition's curve is real bezier-keyframe
+  interpolation instead of a shared formula.
+- **Word-by-word sung/unsung highlighting**, driven directly off each word's
+  real timestamp (a progress-wipe underline, not a tween — this one part
+  intentionally stays outside Theatre.js since it's a discrete state, not an
+  animated value).
 - **A randomized pink accent.** A curated set of emotionally-loaded words
-  (sweetheart, love, true, dreaming, moonlight, whisper…) has a high but
-  not guaranteed chance of turning `--accent` pink instead of ink black,
-  re-rolled on every play-through — so the highlighted words are never
-  quite the same twice, and they never land on throwaway function words
-  like "the" or "on."
-- **A real ending, not a silent reset.** When the song actually finishes,
-  a heart doodle draws itself in and "From Naveen, with love" fades up in
-  the same pink accent, held until you tap play again.
+  (sweetheart, love, true, dreaming, moonlight, whisper…) has a high but not
+  guaranteed chance of turning pink instead of plain ink, re-rolled on every
+  page load.
+- **A real ending, not a silent reset.** When the song actually finishes, a
+  beating-heart GIF and "From Naveen, with love" fade up, held until you tap
+  play again.
 
-## The math (still the soul of it)
+## Non-commercial
 
-- `buildTimeline()` walks the real lyric timestamps and auto-inserts
-  filler "gap" entries for every instrumental stretch greater than 0.6s,
-  so the timeline always accounts for the *exact* song duration with zero
-  unaccounted time — including the ~15s orchestral coda near the end,
-  which becomes a dedicated doodle moment instead of dead air.
-- Position is `(line.start − t)` while upcoming, `0` for the whole time
-  `t` is inside `[start, end]`, `-(t − line.end)` once it's passed —
-  multiplied by a constant px/sec to get a translateY. Opacity and scale
-  are the same distance, clamped. That's the entire visual engine: one
-  function, run every frame, for every line, driven only by
-  `audio.currentTime`.
-- There is only one direction now: `audio.currentTime` drives everything.
-  The earlier manual scroll-to-seek "prank" mode has been removed
-  entirely — this build has no mode to choose, so there's nothing for it
-  to conflict with.
+This is a personal, non-commercial project — a birthday/anniversary page for
+one specific person, not a product. The sourced GIF/PNG assets are used
+accordingly; see `ATTRIBUTION.md` for each one's license and whether
+commercial reuse would need a different source.
 
-## A note on the design process
+## Repo layout
 
-Part of this design was informed by Google Stitch (a real, authenticated
-`stitch.googleapis.com` MCP endpoint) as a design-reference tool — a
-generated mockup and its accompanying design-system spec directly
-informed the final ink-blob button technique (an SVG mask/shape rather
-than a plain circle), the "doodles sit behind text, faint, textural"
-layering rule, and the paper/ink monochrome palette. Nothing from Stitch
-was copied verbatim into the shipped code; it was used the way a mood
-board or reference render is used, then hand-implemented here.
-
-**Why not Theatre.js:** it was considered for the multi-variant
-transitions below. Theatre.js's real value is its Studio — a visual
-timeline editor you scrub by hand to set keyframes, which then exports a
-state JSON you bake into the page. There's no visual editor available in
-the environment this was built in, so using it would have meant
-hand-writing that keyframe JSON blind, which defeats the point of the
-tool. It's also built around discrete triggered tweens, while this page's
-engine is one continuous function of real playback time — a structural
-mismatch either way. The variant system below gets the same practical
-result (varied, non-uniform per-line transitions) as plain per-frame math
-in the existing engine, with no new dependency.
+```
+index.html                    the page (CSS + a small ES module script)
+lyrics-data.mjs                real timing/content data (shared by the page and tools/build-theatre-state.mjs)
+assets/theatre-state.json      generated Theatre.js sequence (do not hand-edit — regenerate instead)
+assets/gif/, assets/png/       sourced GIF/PNG assets (see ATTRIBUTION.md)
+audio/                          the mp3 + its own README
+tools/build-theatre-state.mjs   regenerates assets/theatre-state.json from lyrics-data.mjs
+tools/smoke-test.mjs            loads the generated state into real @theatre/core and samples a few values
+tools/smoke-test-page.mjs       drives the real page in headless Chromium and screenshots a few points
+```
 
 ## Run locally
 
-No build step — it's one HTML file. You do need a server that honors
-HTTP Range requests (audio seeking depends on it) — Python's
-`http.server` does **not** support these, so seeking silently breaks
-against it. Use something that does:
+No build step for the site itself — it's one HTML file plus a JSON file. You
+do need a server that honors HTTP Range requests (audio seeking depends on
+it) — Python's `http.server` does **not** support these:
 
 ```bash
-npx http-server -p 8080 -c-1
+npm install     # only needed for the tools/ scripts below, not the site
+npm run serve   # http-server -p 8080 -c-1
 # then open http://localhost:8080
 ```
 
-## Swap in a different song
+## Changing the choreography or timing
 
-1. Drop your MP3 at `audio/<name>.mp3` and update the `<audio src>` in
-   `index.html`.
-2. Get real word-level timestamps: run `faster-whisper` with
-   `word_timestamps=True` on it (see `ATTRIBUTION.md` for the exact
-   snippet used here) and convert each segment's word list into a
-   `words:[{w,s,e}, …]` array — that's what each `LYRICS` entry expects.
-   For quick line-level-only prototyping instead, open the page with
-   `?tag=1` in the URL and tap along to the track; it logs
-   `audio.currentTime` to an on-screen panel you can copy from.
-3. The doodle symbols are plain inline SVG in the `<defs>` block at the
-   top of `<body>` — swap `LYRICS`/`GAP_DOODLES` entries to reference
-   different `doodle-*` ids, or add new symbols following the same
-   pattern (see the parametric generation notes in `ATTRIBUTION.md`).
+1. Edit `lyrics-data.mjs` (timing, words, section labels, which asset goes
+   with which line).
+2. Edit the motion recipes in `tools/build-theatre-state.mjs` if you want to
+   change what `rise`/`zoom`/`skew`/`blur`/`drift`/`bounce` actually do, or
+   add new variants.
+3. Run `npm run build:theatre` to regenerate `assets/theatre-state.json`.
+4. `npm run smoke` samples a few values from the regenerated state to sanity
+   check it before you reload the page.
 
 ## Deploy
 
-**Vercel:** import this GitHub repo at vercel.com/new — zero config,
-static site, done.
+**Vercel:** import this GitHub repo at vercel.com/new — zero config, static
+site, done.
 
 **GitHub Pages:** Settings → Pages → deploy from the branch root.
 
 ## Credits
 
-Song and recording sourcing documented in `ATTRIBUTION.md`. Built by
-Naveen (the-entertrainer). Earlier design directions (a Katy Perry
-concept, then a maximalist floral rebuild) are kept in `DESIGN-DOC.md`
-for reference; this ink-doodle build superseded both.
+Song and recording sourcing, and every GIF/PNG asset's source and license,
+are documented in `ATTRIBUTION.md`. Built by Naveen (the-entertrainer).
+Earlier design directions (a Katy Perry concept, a maximalist floral
+rebuild, then a hand-drawn ink-doodle build) are kept in `DESIGN-DOC.md` for
+reference; this Theatre.js build superseded all of them.

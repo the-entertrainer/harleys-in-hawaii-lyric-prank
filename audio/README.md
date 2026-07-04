@@ -1,17 +1,18 @@
-# Drop your MP3 here
+# Audio
 
-Add your own copy of the song as:
+`let-me-call-you-sweetheart.mp3` is a 1924 Jubileers vocal-quartet recording
+of the public-domain 1910 song "Let Me Call You Sweetheart," digitized and
+hosted by the Internet Archive. It's committed to this repo (not gitignored)
+— see `ATTRIBUTION.md` for the exact source and rights status.
 
-```
-audio/harleys-in-hawaii.mp3
-```
+`index.html`'s `<audio>` element points straight at this file, so nothing
+else needs to change if you keep the same song.
 
-`index.html` points its `<audio>` element straight at that path, so nothing
-else needs to change once the file exists — refresh and press **Start the
-Ride**.
+## Swapping in a different song
 
-Don't commit an MP3 you don't have the rights to. This folder is git-ignored
-on purpose (see `.gitignore`) so the audio stays local/private to your own
-deploy — upload it directly in the Vercel dashboard (Project → Storage, or
-just keep it out of git and add it to the deployed build another way) if you
-don't want it in the public repo.
+1. Drop your MP3 here and update the `<audio src>` in `index.html`.
+2. Get real word-level timestamps (`faster-whisper` with `word_timestamps=True`
+   is what produced the ones in `lyrics-data.mjs` — see `ATTRIBUTION.md` for
+   the exact snippet) and update the `LYRICS` array in `lyrics-data.mjs`.
+3. Re-run `npm run build:theatre` to regenerate `assets/theatre-state.json`
+   from the new timing data.

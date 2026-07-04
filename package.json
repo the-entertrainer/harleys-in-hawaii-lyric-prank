@@ -1,0 +1,16 @@
+{
+  "name": "my-sweetheart",
+  "private": true,
+  "type": "module",
+  "description": "A Theatre.js-choreographed lyric page for \"Let Me Call You Sweetheart\" (1910, public domain). No build step for the site itself; tooling below only regenerates assets/theatre-state.json or smoke-tests the page.",
+  "scripts": {
+    "build:theatre": "node tools/build-theatre-state.mjs",
+    "smoke": "node tools/smoke-test.mjs",
+    "smoke:page": "node tools/smoke-test-page.mjs",
+    "serve": "http-server -p 8080 -c-1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "playwright": "^1.56.1"
+  }
+}

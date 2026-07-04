@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>verify</title></head>
+<body>
+<pre id="log"></pre>
+<script type="module">
+import core from 'https://esm.sh/@theatre/core@0.7.2';
+const { getProject } = core;
+const log = (...a) => { console.log(...a); document.getElementById('log').textContent += a.join(' ') + '\n'; };
+
+async function main(){
+  const state = /* __STATE_INLINE__ */;
+  const project = getProject('My Sweetheart', { state });
+  const sheet = project.sheet('Lyrics');
+  await project.ready;
+
+  const obj = sheet.object('line-2', { x:0, y:0, opacity:1, scale:1, rotate:0, blur:0 });
+  const samples = [];
+  for (const t of [0, 13.0, 13.5, 14.7, 18, 22.9, 24, 25]){
+    sheet.sequence.position = t;
+    samples.push({ t, y: obj.value.y, opacity: obj.value.opacity, scale: +obj.value.scale.toFixed(3) });
+  }
+  window.__RESULT__ = samples;
+  window.__DONE__ = true;
+  log(JSON.stringify(samples, null, 2));
+}
+main().catch(e => { log('ERROR', e.message, e.stack); window.__ERROR__ = String(e.stack || e); });
+</script>
+</body>
+</html>
