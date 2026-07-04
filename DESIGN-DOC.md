@@ -1,3 +1,11 @@
+> **Note:** This was the original concept doc, written around "Harleys in
+> Hawaii" (a copyrighted Katy Perry song). The project has since pivoted to
+> "Let Me Call You Sweetheart," a public-domain 1910 song, so the actual
+> build in `index.html` differs in song, visual system, and asset sourcing
+> from what's described below. Kept here as historical reference for the
+> core prank mechanic and scroll↔time math, which carried over. See
+> `README.md` and `ATTRIBUTION.md` for what's actually shipped.
+
 # HARLEYS IN HAWAII
 ## Interactive Lyric Sync Prank — Design Document
 

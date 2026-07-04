@@ -1,88 +1,101 @@
-# Harleys in Hawaii — Interactive Lyric Sync Prank
+# Let Me Call You Sweetheart — An Interactive Lyric Sync
 
-A single-page, mobile-first interactive lyric video with a prank twist.
-
-Land on the page, tap **Start the Ride**, then scroll to try to keep the
-lyrics perfectly in sync with the song. It's genuinely hard to nail by hand —
-after a bit of struggling, the page calls it out and offers to take over:
+A single-page, mobile-first interactive lyric video staged like a 1930s
+silent-film title card, built around a genuinely public-domain 1910 love
+song. Tap **Begin the Reel**, then scroll to try to keep the lyrics in
+sync with the waltz yourself. It's genuinely hard to nail by hand — after
+a bit of struggling, the page calls it out and offers to take over:
 
 > "Hey — you can't really enjoy the song if you keep trying to figure out
 > the perfect sync. Lemme just do that for you."
 >
 > **Can you "sync" for me? ☺️** · **I want to do it myself 😎**
 
-## How it actually works (the math)
+## What's actually in this build
 
-- The entire lyrics section is one long scroll — no inner scroll boxes, no
-  fake "auto-scroll to element" jumps.
-- Every lyric block's height is proportional to how long it lasts in the
-  song (`(end - start) * PX_PER_SEC`), so a constant scroll speed maps to a
-  constant playback speed. That's the whole "soul" of the sync.
-- **Manual mode:** your scroll position is converted into a fraction of the
-  lyrics section, multiplied by the song's total duration, and written
-  straight to `audio.currentTime`. Scroll steadily at the right pace and it
-  sounds perfect; scroll unevenly and the song stutters — that's the joke.
-- **Auto mode:** it's the exact inverse. A `requestAnimationFrame` loop
-  reads `audio.currentTime` every frame and eases `window.scrollTo` toward
-  the matching scroll position, so playback drives the scroll instead of
-  the other way around.
-- The struggle prompt triggers on either a flat timer or on detecting
-  repeated large corrections between where you scrolled and where the audio
-  actually was — i.e. it notices when you're actually struggling, not just
-  when a clock runs out.
+- **Real audio, real timing.** `audio/let-me-call-you-sweetheart.mp3` is a
+  1924 Jubileers vocal-quartet recording of the fully public-domain 1910
+  song "Let Me Call You Sweetheart" (Leo Friedman / Beth Slater Whitson),
+  digitized and hosted by the Internet Archive. Every lyric timestamp in
+  `index.html`'s `LYRICS` array came from running
+  [faster-whisper](https://github.com/SYSTRAN/faster-whisper) directly on
+  that recording — it's transcription-grounded to the actual waveform,
+  not guessed.
+- **Real clip art, properly matted.** Every illustration in
+  `assets/clipart/` is a CC0 vintage engraving sourced via
+  [Openverse](https://openverse.org). The as-served files had a
+  checkerboard baked into the pixels as a fake "transparency" preview; a
+  local script reconstructed genuine alpha (luminance threshold +
+  border-connected flood fill) before they were saved into the repo. See
+  `ATTRIBUTION.md` for full sourcing.
+- **A visual system built around the theme, not against it.** Bodoni
+  Moda / Cormorant Garamond / Courier Prime typography, procedural film
+  grain + vignette, an iris-wipe open, and a literal ticking clock in the
+  player bar — because a song about time, staged like *Modern Times*,
+  should look like it.
 
-## Add your own song
+## The math (the part that actually matters)
 
-1. Drop your MP3 at `audio/harleys-in-hawaii.mp3` (see `audio/README.md`).
-   The `<audio>` tag already points there — nothing else to wire up.
-2. Open `index.html` and edit the `LYRICS` array near the top of the
-   `<script>` block. Each entry is:
-   ```js
-   { start: 28.0, end: 33.8, section: "CHORUS", text: "your lyric line", fx: "sky" }
-   ```
-   `start`/`end` are seconds into the track. `fx` can be `default`, `vroom`,
-   `hula`, `sky`, or `finale` — small pre-built typography animations you
-   can assign per line (add your own by following the same pattern in the
-   `<style>` block).
-3. **Getting real timestamps fast:** open the page with `?tag=1` in the URL
-   (e.g. `index.html?tag=1`). Play the song and tap the on-screen panel (or
-   press `T`) in time with each new line — it logs `audio.currentTime` to a
-   little overlay and the console so you can copy the numbers straight into
-   `LYRICS`.
+- The whole lyrics section is one continuous scroll — no inner scroll
+  boxes, no fake "jump to element" auto-scroll.
+- A `buildTimeline()` pass walks the real lyric timestamps and
+  auto-inserts filler blocks for every instrumental gap greater than
+  0.6s, so the DOM's total height always maps to the *exact* song
+  duration with zero unaccounted time — including the ~15s orchestral
+  coda near the end, which becomes a dedicated clip-art moment instead of
+  dead scroll space.
+- Each block's height is `(end − start) × 70px/sec`, so a constant
+  scroll speed maps to a constant playback speed.
+- **Manual mode:** scroll position → fraction of the lyrics section →
+  multiplied by total duration → written straight to `audio.currentTime`.
+  Scroll unevenly and the song audibly stutters; that's the built-in
+  difficulty, not a fake timer.
+- **Auto mode:** the exact inverse — a `requestAnimationFrame` loop reads
+  `audio.currentTime` every frame and eases `window.scrollTo` toward the
+  matching position.
+- **Floating clip art** is choreographed with GSAP + ScrollTrigger,
+  anchored to the same DOM blocks the lyric timing already built — so
+  every peek-in/slide-out is driven by scroll position and works
+  identically whether a human or auto-mode is doing the scrolling.
+
+GSAP and ScrollTrigger are vendored locally in `assets/vendor/` rather
+than pulled from a CDN at runtime — the core scroll↔time sync also has a
+plain-CSS fallback path if, for whatever reason, GSAP fails to load, so a
+choreography hiccup can never take the whole page down with it.
 
 ## Run locally
 
-No build step — it's one HTML file.
+No build step — it's one HTML file. You do need a server that honors
+HTTP Range requests (audio seeking depends on it) — Python's
+`http.server` does **not** support these, so seeking silently breaks
+against it. Use something that does:
 
 ```bash
-python3 -m http.server 8000
-# then open http://localhost:8000
+npx http-server -p 8080 -c-1
+# then open http://localhost:8080
 ```
 
-(Audio autoplay requires a user gesture, which is why there's a Start
-button — this also works identically once deployed.)
+## Swap in a different song
+
+1. Drop your MP3 at `audio/<name>.mp3` and update the `<audio src>` in
+   `index.html`.
+2. Get real timestamps fast: run `faster-whisper` on it (see the snippet
+   in `ATTRIBUTION.md`'s method notes) or open the page with `?tag=1` in
+   the URL and tap along to the track — it logs `audio.currentTime` to an
+   on-screen panel you can copy straight into the `LYRICS` array.
+3. Swap `assets/clipart/*.png` for art matching the new song's mood —
+   each `LYRICS`/`GAP_CLIPS` entry just references a filename.
 
 ## Deploy
 
-**Vercel:** import this GitHub repo at vercel.com/new — it's a static site,
-zero config needed. Just make sure your MP3 makes it into the deployment
-(the repo's `.gitignore` keeps audio files out of git by default; either
-remove that line for a private repo, or upload the file directly wherever
-you host it).
+**Vercel:** import this GitHub repo at vercel.com/new — zero config,
+static site, done.
 
-**GitHub Pages:** Settings → Pages → deploy from the branch root. Works the
-same way.
-
-## Song reference
-
-- **Track:** Harleys in Hawaii — Katy Perry
-- **BPM:** 140
-- The lyric snippets baked into `index.html` are intentionally partial
-  (verse 2 / bridge / outro are placeholders) — drop in the rest of the
-  words and their real timings once you're working with your own copy of
-  the song.
+**GitHub Pages:** Settings → Pages → deploy from the branch root.
 
 ## Credits
 
-Designed & built by Naveen (the-entertrainer). Full original design spec in
-`DESIGN-DOC.md`.
+Song, recording, clip art, and font sourcing all documented in
+`ATTRIBUTION.md`. Built by Naveen (the-entertrainer). Original design
+spec for the concept (then built around a different, copyrighted song)
+is kept in `DESIGN-DOC.md` for reference.
