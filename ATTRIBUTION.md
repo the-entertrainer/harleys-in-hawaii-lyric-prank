@@ -15,11 +15,37 @@ https://archive.org/details/78_let-me-call-you-sweetheart_the-jubileers-friedman
 
 ## Lyric timing
 
-Every timestamp in the `LYRICS` array in `index.html` was produced by running
-[faster-whisper](https://github.com/SYSTRAN/faster-whisper) (word-level
-timestamps) directly on the recording above, then checked against the
-printed 1910 lyric sheet. It's transcription-grounded to the actual
-waveform, not hand-guessed.
+Every timestamp in the `LYRICS` array in `index.html` — both each line's
+`start`/`end` and every individual word's `s`/`e` inside its `words`
+array — was produced by running
+[faster-whisper](https://github.com/SYSTRAN/faster-whisper) with
+word-level timestamps directly on the recording above:
+
+```python
+from faster_whisper import WhisperModel
+model = WhisperModel("small", device="cpu", compute_type="int8")
+segments, info = model.transcribe(
+    "let-me-call-you-sweetheart.mp3", word_timestamps=True, language="en"
+)
+for seg in segments:
+    for w in seg.words:
+        print(w.start, w.end, w.word)
+```
+
+then checked against the printed 1910 lyric sheet for spelling (Whisper's
+transcription is used for **timing**, not wording — the displayed text is
+the real published lyric). It's transcription-grounded to the actual
+waveform, not hand-guessed, which is what lets each word underline itself
+in ink at the exact moment it's sung rather than at an evenly-interpolated
+guess.
+
+One exception: the final tag line (the last ~1.4s of the recording, a
+soft fade-out) came back from Whisper with all ten words collapsed onto
+the same timestamp — the model couldn't resolve individual words in that
+fade. Those ten words were evenly re-interpolated across the segment's
+real start/end instead of using the (degenerate) per-word output
+directly; every other line's word timings are Whisper's actual output,
+unmodified.
 
 ## Ink-doodle flowers (current build)
 
