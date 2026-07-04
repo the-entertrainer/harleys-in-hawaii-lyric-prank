@@ -7,13 +7,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 async function main(){
-  const stateJson = fs.readFileSync(path.join(ROOT, 'assets', 'theatre-state.json'), 'utf8');
+  const stateJson = fs.readFileSync(path.join(ROOT, 'public', 'assets', 'theatre-state.json'), 'utf8');
   const template = fs.readFileSync(path.join(__dirname, 'smoke-test.html'), 'utf8');
   const generated = template.replace('/* __STATE_INLINE__ */', stateJson);
   const generatedPath = path.join(__dirname, '.smoke-test.generated.html');
   fs.writeFileSync(generatedPath, generated);
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const page = await browser.newPage();
   page.on('console', msg => console.log('[page]', msg.text()));
   page.on('pageerror', err => console.error('[pageerror]', err));

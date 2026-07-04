@@ -1,50 +1,45 @@
-// Drives the real page (served at http://127.0.0.1:8080 by `http-server`,
-// e.g. `npm run serve`) through headless Chromium, seeking through the song
-// and screenshotting a few points to sanity-check the Theatre.js-driven
-// staging end to end. Not part of the shipped site.
+// Drives the real page (served by `npm run dev`, default http://localhost:5173)
+// through headless Chromium, seeking through the song and screenshotting a
+// few points to sanity-check the Theatre.js + Three.js staging end to end.
+// Not part of the shipped site.
 import { chromium } from 'playwright';
 
+const BASE_URL = process.env.SMOKE_URL || 'http://127.0.0.1:5183';
+const VIEWPORT = process.env.SMOKE_MOBILE
+  ? { width: 390, height: 844 }
+  : { width: 1400, height: 900 };
+
 async function main(){
-  const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 500, height: 900 } });
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: 2 });
   const errors = [];
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); console.log('[console]', msg.type(), msg.text()); });
   page.on('pageerror', err => { errors.push(String(err)); console.error('[pageerror]', err); });
 
-  await page.route('https://esm.sh/**', async (route) => {
-    const req = route.request();
-    try {
-      const resp = await fetch(req.url());
-      const body = Buffer.from(await resp.arrayBuffer());
-      const headers = {};
-      resp.headers.forEach((v, k) => { if (!/^(content-encoding|content-length|transfer-encoding)$/i.test(k)) headers[k] = v; });
-      await route.fulfill({ status: resp.status, headers, body });
-    } catch (e) {
-      console.error('[route fetch failed]', req.url(), e.message);
-      await route.abort();
-    }
-  });
-  await page.route('https://fonts.googleapis.com/**', r => r.abort());
-  await page.route('https://fonts.gstatic.com/**', r => r.abort());
-
-  await page.goto('http://127.0.0.1:8080/index.html', { waitUntil: 'load' });
-  await page.waitForTimeout(1500);
+  await page.goto(BASE_URL, { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
   await page.screenshot({ path: 'tools/.shot-initial.png' });
 
-  // Force playback forward without needing real audio decoding time: seek and
-  // dispatch a timeupdate-driven frame manually by setting currentTime.
   await page.evaluate(() => {
     const audio = document.getElementById('track');
     audio.muted = true;
-    window.togglePlay();
-    return audio.play().then(() => { audio.currentTime = 16; });
+    document.getElementById('play-btn').click();
+    return audio.play().then(() => { audio.currentTime = 18; });
   });
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: 'tools/.shot-t16.png' });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: 'tools/.shot-t18-chorus.png' });
+
+  await page.evaluate(() => { document.getElementById('track').currentTime = 65; });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: 'tools/.shot-t65-verse.png' });
 
   await page.evaluate(() => { document.getElementById('track').currentTime = 85; });
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: 'tools/.shot-t85.png' });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: 'tools/.shot-t85-verse2.png' });
+
+  await page.evaluate(() => { document.getElementById('track').currentTime = 150; });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: 'tools/.shot-t150-finale-window.png' });
 
   await page.evaluate(() => {
     const audio = document.getElementById('track');
@@ -57,5 +52,6 @@ async function main(){
 
   console.log('ERRORS:', errors.length ? errors : 'none');
   await browser.close();
+  if (errors.length) process.exit(1);
 }
 main().catch(e => { console.error(e); process.exit(1); });

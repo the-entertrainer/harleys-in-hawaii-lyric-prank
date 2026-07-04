@@ -10,9 +10,9 @@ else needs to change if you keep the same song.
 
 ## Swapping in a different song
 
-1. Drop your MP3 here and update the `<audio src>` in `index.html`.
+1. Drop your MP3 here (`public/audio/`) and update the `<audio src>` in `index.html`.
 2. Get real word-level timestamps (`faster-whisper` with `word_timestamps=True`
-   is what produced the ones in `lyrics-data.mjs` — see `ATTRIBUTION.md` for
-   the exact snippet) and update the `LYRICS` array in `lyrics-data.mjs`.
-3. Re-run `npm run build:theatre` to regenerate `assets/theatre-state.json`
+   is what produced the ones in `src/lyrics-data.mjs` — see `ATTRIBUTION.md` for
+   the exact snippet) and update the `LYRICS` array in `src/lyrics-data.mjs`.
+3. Re-run `npm run build:theatre` to regenerate `public/assets/theatre-state.json`
    from the new timing data.

@@ -14,11 +14,16 @@ async function main(){
   const sheet = project.sheet('Lyrics');
   await project.ready;
 
-  const obj = sheet.object('line-2', { x:0, y:0, opacity:1, scale:1, rotate:0, blur:0 });
+  const obj = sheet.object('line-2', { x:0, y:0, opacity:1, scale:1, rotate:0, blur:0, weight:600 });
+  const camera = sheet.object('camera', { z:8, fov:45, yaw:0 });
+  const hero = sheet.object('hero-heart', { scale:0, x:0, y:0 });
   const samples = [];
   for (const t of [0, 13.0, 13.5, 14.7, 18, 22.9, 24, 25]){
     sheet.sequence.position = t;
-    samples.push({ t, y: obj.value.y, opacity: obj.value.opacity, scale: +obj.value.scale.toFixed(3) });
+    samples.push({
+      t, y: obj.value.y, opacity: obj.value.opacity, scale: +obj.value.scale.toFixed(3), weight: Math.round(obj.value.weight),
+      cameraZ: +camera.value.z.toFixed(2), heroScale: +hero.value.scale.toFixed(2),
+    });
   }
   window.__RESULT__ = samples;
   window.__DONE__ = true;
