@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harleys in Hawaii • Lyric Sync Prank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        
+        :root {
+            --accent-pink: #FF4D94;
+            --accent-purple: #7B2CBF;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .display-font {
+            font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .tropical-gradient {
+            background: linear-gradient(135deg, #1A1429 0%, #0F0A1F 100%);
+        }
+
+        .lyric-gradient {
+            background: linear-gradient(90deg, #FF4D94, #7B2CBF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass {
+            background: rgba(255,255,255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255, 0.1);
+        }
+
+        .lyric-line {
+            transition: all 0.3s cubic-bezier(0.23, 1.0, 0.32, 1);
+            padding: 0.75rem 1.25rem;
+            margin: 0.35rem 0;
+            border-radius: 12px;
+            font-size: 1.35rem;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        .lyric-line.active {
+            background: rgba(255, 77, 148, 0.12);
+            transform: scale(1.015);
+            color: #fff;
+            box-shadow: 0 10px 30px -15px rgb(255 77 148 / 0.3);
+            font-weight: 600;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #FF4D94;
+            opacity: 0.7;
+        }
+
+        .navy {
+            color: #1A1429;
+        }
+
+        .scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: #FF4D94 transparent;
+        }
+
+        .prank-toast {
+            animation: slideUp 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .auto-badge {
+            background: linear-gradient(90deg, #FF4D94, #7B2CBF);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgb(255 77 148 / 0.4);
+        }
+
+        .lyric-scroll {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .music-visual {
+            height: 3px;
+            background: linear-gradient(to right, #FF4D94, #7B2CBF);
+            animation: pulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-[#0F0A1F] text-white overflow-x-hidden">
+    <!-- Hero / Landing -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Top nav -->
+        <nav class="flex items-center justify-between px-6 py-5 border-b border-white/10">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#FF4D94] to-[#7B2CBF] flex items-center justify-center">
+                    <i class="fa-solid fa-motorcycle text-white text-xl"></i>
+                </div>
+                <div>
+                    <span class="font-semibold tracking-tight text-xl">Naveen</span>
+                    <span class="text-white/50 text-sm ml-1">presents</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-x-2 text-sm">
+                <div class="px-3 py-1.5 rounded-3xl bg-white/5 text-white/60 flex items-center gap-x-1.5 text-xs">
+                    <i class="fa-solid fa-globe"></i>
+                    <span>GitHub + Vercel</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Content -->
+        <div class="flex-1 flex items-center justify-center px-6 pt-8 pb-12">
+            <div class="max-w-3xl text-center">
+                <div class="inline-flex items-center gap-x-2 px-4 py-1.5 rounded-3xl bg-white/5 mb-6 text-sm">
+                    <div class="w-2 h-2 bg-[#FF4D94] rounded-full animate-pulse"></div>
+                    <span class="text-white/70">140 BPM • Tropical Pop</span>
+                </div>
+
+                <h1 class="text-7xl md:text-8xl font-semibold tracking-tighter display-font leading-none mb-4">
+                    HARLEYS IN<br>HAWAII
+                </h1>
+                
+                <p class="text-2xl text-white/70 tracking-tight mb-3">Katy Perry</p>
+                
+                <p class="max-w-md mx-auto text-lg text-white/60 mb-10">
+                    An interactive lyric video prank.<br>
+                    Try to sync it yourself. Or let <span class="font-semibold text-[#FF4D94]">Naveen</span> do it perfectly.
+                </p>
+
+                <!-- Mode Selection -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+                    <button onclick="selectMode('auto')"
+                            class="group flex-1 sm:flex-none px-9 py-4 rounded-3xl bg-gradient-to-r from-[#FF4D94] to-[#7B2CBF] hover:brightness-110 active:scale-[0.985] transition-all flex items-center justify-center gap-x-3 text-lg font-semibold shadow-xl shadow-[#FF4D94]/30">
+                        <i class="fa-solid fa-magic mr-2"></i>
+                        <span>LET NAVEEN SYNC IT</span>
+                        <span class="text-xs px-2 py-0.5 bg-white/20 rounded-2xl">AUTO</span>
+                    </button>
+                    
+                    <button onclick="selectMode('manual')"
+                            class="group flex-1 sm:flex-none px-9 py-4 rounded-3xl border border-white/30 hover:bg-white/5 active:scale-[0.985] transition-all flex items-center justify-center gap-x-3 text-lg font-medium">
+                        <i class="fa-solid fa-hand-paper mr-2"></i>
+                        <span>I'LL DO IT MYSELF</span>
+                        <span class="text-xs px-2.5 py-0.5 border border-white/30 rounded-2xl">CHALLENGE</span>
+                    </button>
+                </div>
+
+                <div class="text-white/40 text-sm flex items-center justify-center gap-x-2">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span>Best experienced on mobile • Scroll with your thumb</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtle instruction -->
+        <div class="text-center pb-8 text-white/40 text-xs tracking-widest">
+            SCROLL TO BEGIN THE RIDE
+        </div>
+    </div>
+
+    <!-- The Experience Section (hidden until mode selected) -->
+    <div id="experience" class="hidden max-w-3xl mx-auto px-5 pb-20">
+        <div class="glass rounded-3xl p-1 shadow-2xl">
+            <div class="bg-[#1A1429] rounded-[22px] overflow-hidden">
+                
+                <!-- Sticky Player Bar -->
+                <div class="sticky top-0 z-50 bg-[#1A1429]/95 backdrop-blur-xl border-b border-white/10 px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-x-4">
+                        <button id="play-btn" onclick="togglePlay()"
+                                class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white text-[#1A1429] hover:bg-[#FF4D94] hover:text-white transition-colors shadow-inner">
+                            <i class="fa-solid fa-play text-xl ml-0.5" id="play-icon"></i>
+                        </button>
+                        
+                        <div>
+                            <div class="font-semibold tracking-tight">Harleys in Hawaii</div>
+                            <div class="text-xs text-white/50">Katy Perry • 3:05</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-x-4 text-sm">
+                        <div id="mode-badge"
+                             class="px-4 py-1 rounded-3xl text-xs font-medium flex items-center gap-x-1.5">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="font-mono text-xs text-white/50 tabular-nums" id="time-display">0:00 / 3:05</div>
+                    </div>
+                </div>
+
+                <!-- Lyrics Scroll Area -->
+                <div id="lyrics-scroll" 
+                     class="lyric-scroll px-5 py-8 bg-[#0F0A1F] text-[1.35rem] leading-tight scroll-container"
+                     style="max-height: 520px; overscroll-behavior: contain;">
+                    
+                    <!-- Populated dynamically by JS -->
+                </div>
+
+                <!-- Bottom bar -->
+                <div class="px-5 py-4 border-t border-white/10 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-x-2 text-white/40">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span id="status-text">Ready to ride</span>
+                    </div>
+                    
+                    <button onclick="resetExperience()" 
+                            class="text-white/50 hover:text-white transition-colors flex items-center gap-x-1 text-xs">
+                        <i class="fa-solid fa-redo"></i>
+                        <span>Reset</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fun note -->
+        <div class="text-center mt-6 text-xs text-white/30">
+            This is a high-fidelity starter. Replace with real MP3 + full timed lyrics for production.
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent-pink', '#FF4D94');
+        }
+
+        let currentMode = null;
+        let isPlaying = false;
+        let audioTime = 0;
+        let rafId = null;
+        let lyricsData = [];
+        let scrollContainer;
+        let playBtn, playIcon, timeDisplay, modeBadge, statusText, lyricsScroll;
+
+        // Sample timed lyrics (approximate for demo - replace with real data)
+        const sampleLyrics = [
+            { id: 'v1-1', start: 0, end: 5.2, section: 'VERSE 1', text: "Boy, tell me, can you take my breath away?" },
+            { id: 'v1-2', start: 5.2, end: 9.8, text: "Cruisin' down a heart-shaped highway" },
+            { id: 'v1-3', start: 9.8, end: 14.5, text: "Got you swervin' lane-to-lane, don't hit the brakes" },
+            { id: 'v1-4', start: 14.5, end: 18.2, text: "'Cause I'm feelin' so safe" },
+            { id: 'pre-1', start: 18.2, end: 23.5, section: 'PRE-CHORUS', text: "I'll be your baby, on a Sunday" },
+            { id: 'pre-2', start: 23.5, end: 28.0, text: "Oh, why don't we get out of town?" },
+            { id: 'chorus-1', start: 28.0, end: 33.8, section: 'CHORUS', text: "You and I, I \nRidin' Harleys in Hawaii-i-i" },
+            { id: 'chorus-2', start: 33.8, end: 40.5, text: "I'm on the back, I'm holdin' tight, I \nWant you to take me for a ri-ide, ride" },
+            { id: 'hula', start: 40.5, end: 47.0, text: "When I hula-hula, hula \nSo good, you'll take me to the jeweler-jeweler, jeweler" },
+            { id: 'sky', start: 47.0, end: 53.5, text: "There's pink and purple in the sky-y-y \nWe're ridin' Harleys in Hawaii-i-i" },
+        ];
+
+        function selectMode(mode) {
+            currentMode = mode;
+            
+            // Hide hero, show experience
+            document.querySelector('.min-h-screen').classList.add('hidden');
+            const exp = document.getElementById('experience');
+            exp.classList.remove('hidden');
+            exp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Setup
+            setupExperience(mode);
+        }
+
+        function setupExperience(mode) {
+            scrollContainer = document.getElementById('lyrics-scroll');
+            playBtn = document.getElementById('play-btn');
+            playIcon = document.getElementById('play-icon');
+            timeDisplay = document.getElementById('time-display');
+            modeBadge = document.getElementById('mode-badge');
+            statusText = document.getElementById('status-text');
+            lyricsScroll = scrollContainer;
+
+            // Render lyrics
+            renderLyrics();
+
+            // Mode badge
+            if (mode === 'auto') {
+                modeBadge.innerHTML = `
+                    <span class="auto-badge px-4 py-1 rounded-3xl text-xs font-semibold flex items-center gap-x-1.5">
+                        <i class="fa-solid fa-magic"></i> 
+                        <span>AUTO-SYNC BY NAVEEN</span>
+                    </span>
+                `;
+                modeBadge.className = 'flex items-center';
+                statusText.textContent = 'Naveen is in control • Perfect timing locked';
+            } else {
+                modeBadge.innerHTML = `
+                    <span class="px-4 py-1 rounded-3xl border border-white/30 text-xs font-medium flex items-center gap-x-1.5">
+                        <i class="fa-solid fa-hand-paper"></i> 
+                        <span>MANUAL CHALLENGE</span>
+                    </span>
+                `;
+                modeBadge.className = 'flex items-center';
+                statusText.textContent = 'Scroll to sync with the beat. Good luck!';
+            }
+
+            // Add scroll listener for manual mode
+            if (mode === 'manual') {
+                let scrollTimeout;
+                scrollContainer.addEventListener('scroll', () => {
+                    if (!isPlaying || currentMode !== 'manual') return;
+                    
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        syncAudioToScroll();
+                    }, 80);
+                }, { passive: true });
+
+                // Struggle detection (demo)
+                setTimeout(() => {
+                    if (currentMode === 'manual' && isPlaying) {
+                        showStrugglePrompt();
+                    }
+                }, 18500);
+            }
+
+            // Initial highlight
+            updateActiveLyric(0);
+        }
+
+        function renderLyrics() {
+            const container = document.getElementById('lyrics-scroll');
+            container.innerHTML = '';
+
+            let currentSection = '';
+
+            sampleLyrics.forEach((lyric, index) => {
+                if (lyric.section && lyric.section !== currentSection) {
+                    currentSection = lyric.section;
+                    const sectionEl = document.createElement('div');
+                    sectionEl.className = `section-label px-5 pt-6 pb-1`;
+                    sectionEl.textContent = lyric.section;
+                    container.appendChild(sectionEl);
+                }
+
+                const line = document.createElement('div');
+                line.className = `lyric-line px-5 py-3 text-white/90 cursor-pointer hover:bg-white/5`;
+                line.id = `lyric-${lyric.id}`;
+                line.innerHTML = lyric.text.replace(/\n/g, '<br>');
+                
+                line.onclick = () => {
+                    if (isPlaying && currentMode === 'manual') {
+                        audioTime = lyric.start;
+                        updateActiveLyric(lyric.start);
+                        updateTimeDisplay();
+                    }
+                };
+
+                container.appendChild(line);
+            });
+        }
+
+        function updateActiveLyric(currentTime) {
+            sampleLyrics.forEach(lyric => {
+                const el = document.getElementById(`lyric-${lyric.id}`);
+                if (!el) return;
+
+                const isActive = currentTime >= lyric.start && currentTime < lyric.end;
+                
+                if (isActive) {
+                    el.classList.add('active', 'scale-[1.015]');
+                    el.style.color = '#fff';
+                    
+                    // Auto scroll to center in manual or always in auto
+                    if (currentMode === 'auto' || (currentMode === 'manual' && isPlaying)) {
+                        const containerRect = lyricsScroll.getBoundingClientRect();
+                        const elRect = el.getBoundingClientRect();
+                        
+                        const targetScroll = lyricsScroll.scrollTop + (elRect.top - containerRect.top) - (containerRect.height * 0.38);
+                        
+                        lyricsScroll.scrollTo({
+                            top: targetScroll,
+                            behavior: currentMode === 'auto' ? 'smooth' : 'auto'
+                        });
+                    }
+                } else {
+                    el.classList.remove('active', 'scale-[1.015]');
+                    el.style.color = '';
+                }
+            });
+        }
+
+        function syncAudioToScroll() {
+            if (!scrollContainer || currentMode !== 'manual' || !isPlaying) return;
+
+            const progress = (scrollContainer.scrollTop + (scrollContainer.clientHeight * 0.38)) / 
+                           (scrollContainer.scrollHeight - scrollContainer.clientHeight);
+            
+            const newTime = Math.max(0, Math.min(185, progress * 185));
+            audioTime = newTime;
+            updateActiveLyric(audioTime);
+            updateTimeDisplay();
+        }
+
+        function updateTimeDisplay() {
+            if (!timeDisplay) return;
+            const mins = Math.floor(audioTime / 60);
+            const secs = Math.floor(audioTime % 60);
+            timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')} / 3:05`;
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            
+            if (isPlaying) {
+                playIcon.classList.remove('fa-play');
+                playIcon.classList.add('fa-pause');
+                statusText.textContent = currentMode === 'auto' ? 'Naveen is driving • Enjoy the ride' : 'Keep scrolling in rhythm...';
+                
+                if (currentMode === 'auto') {
+                    startAutoSync();
+                } else {
+                    startManualSimulation();
+                }
+            } else {
+                playIcon.classList.remove('fa-pause');
+                playIcon.classList.add('fa-play');
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                }
+                statusText.textContent = 'Paused';
+            }
+        }
+
+        function startAutoSync() {
+            if (rafId) cancelAnimationFrame(rafId);
+            
+            const startTime = Date.now();
+            const initialAudioTime = audioTime;
+
+            function loop() {
+                if (!isPlaying || currentMode !== 'auto') return;
+
+                const elapsed = (Date.now() - startTime) / 1000;
+                audioTime = initialAudioTime + elapsed;
+
+                if (audioTime >= 185) {
+                    audioTime = 185;
+                    isPlaying = false;
+                    playIcon.classList.remove('fa-pause');
+                    playIcon.classList.add('fa-play');
+                    statusText.textContent = 'Ride complete • Thanks for cruising with Naveen';
+                    return;
+                }
+
+                updateActiveLyric(audioTime);
+                updateTimeDisplay();
+
+                rafId = requestAnimationFrame(loop);
+            }
+
+            loop();
+        }
+
+        function startManualSimulation() {
+            // In real version this would be driven by actual <audio> currentTime
+            // Here we just let user scroll + occasional time update for demo
+            if (rafId) cancelAnimationFrame(rafId);
+
+            function manualLoop() {
+                if (!isPlaying || currentMode !== 'manual') return;
+
+                // Slowly advance time if user is not scrolling much (demo helper)
+                if (Math.random() > 0.92) {
+                    audioTime = Math.min(185, audioTime + 0.8);
+                    updateActiveLyric(audioTime);
+                    updateTimeDisplay();
+                }
+
+                rafId = requestAnimationFrame(manualLoop);
+            }
+
+            manualLoop();
+        }
+
+        function showStrugglePrompt() {
+            if (currentMode !== 'manual' || !isPlaying) return;
+
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 max-w-[92%] w-full sm:w-auto glass px-6 py-5 rounded-3xl shadow-2xl prank-toast z-[100]`;
+            toast.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-x-4 gap-y-3">
+                    <div class="flex-1">
+                        <div class="font-semibold text-lg tracking-tight">Maintaining perfect 140 BPM scroll is brutal, huh?</div>
+                        <div class="text-white/70 text-sm mt-0.5">Want Naveen to take over with flawless mathematical sync?</div>
+                    </div>
+                    <div class="flex gap-x-2 flex-shrink-0">
+                        <button onclick="switchToAuto(this)" 
+                                class="px-5 py-2.5 bg-gradient-to-r from-[#FF4D94] to-[#7B2CBF] text-sm font-semibold rounded-2xl whitespace-nowrap">
+                            Yes, let Naveen drive
+                        </button>
+                        <button onclick="dismissToast(this)" 
+                                class="px-4 py-2.5 text-sm border border-white/20 hover:bg-white/5 rounded-2xl whitespace-nowrap">
+                            Nah, I got this
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // Auto dismiss after some time if ignored
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 22000);
+        }
+
+        function switchToAuto(element) {
+            const toast = element.closest('.fixed');
+            if (toast) toast.remove();
+
+            currentMode = 'auto';
+            
+            // Update badge
+            modeBadge.innerHTML = `
+                <span class="auto-badge px-4 py-1 rounded-3xl text-xs font-semibold flex items-center gap-x-1.5">
+                    <i class="fa-solid fa-magic"></i> 
+                    <span>AUTO-SYNC BY NAVEEN</span>
+                </span>
+            `;
+            statusText.textContent = 'Naveen is in control • Perfect timing locked';
+
+            // Restart with auto behavior
+            if (isPlaying) {
+                if (rafId) cancelAnimationFrame(rafId);
+                startAutoSync();
+            }
+        }
+
+        function dismissToast(element) {
+            const toast = element.closest('.fixed');
+            if (toast) toast.remove();
+        }
+
+        function updateActiveLyricFromTime(time) {
+            updateActiveLyric(time);
+        }
+
+        function resetExperience() {
+            if (rafId) cancelAnimationFrame(rafId);
+            isPlaying = false;
+            audioTime = 0;
+            
+            const exp = document.getElementById('experience');
+            exp.classList.add('hidden');
+            
+            const hero = document.querySelector('.min-h-screen');
+            hero.classList.remove('hidden');
+            window.scrollTo(0, 0);
+
+            // Reset play button
+            if (playIcon) {
+                playIcon.classList.remove('fa-pause');
+                playIcon.classList.add('fa-play');
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.getElementById('experience').classList.contains('hidden') === false) {
+                e.preventDefault();
+                const btn = document.getElementById('play-btn');
+                if (btn) btn.click();
+            }
+        });
+
+        // Boot
+        function boot() {
+            initTailwind();
+            
+            // Optional: Preload hint
+            console.log('%c[Lyric Prank] Starter ready. Add your real MP3 + full timed lyrics for production.', 'color:#666');
+        }
+
+        window.onload = boot;
+    </script>
+</body>
+</html>
