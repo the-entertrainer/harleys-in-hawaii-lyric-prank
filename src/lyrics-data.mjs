@@ -10,15 +10,14 @@
  * Theatre.js keyframes from it) and src/main.js (which plays it back), so
  * the two never drift apart.
  *
- * Visual model — "poster scenes", set by the user's own Canva reference
- * video: the song divides into SCENES at section boundaries. Each scene is
- * a fixed poster composition that BUILDS IN ONCE and HOLDS — a small
- * pinned caption, chunky display type accumulating word-by-word as the
- * words are actually sung (typewriter-style, nothing ever flies through),
- * one large photographic anchor object that rises into place and stays,
+ * Visual model — the song plays out as a broadcast on a 3D vintage TV's CRT
+ * screen (src/scene/tvScene.js + src/scene/tvScreen.js): the song divides
+ * into SCENES at section boundaries, each a fixed lower-third title card
+ * that BUILDS IN ONCE and HOLDS — chunky display type accumulating
+ * word-by-word as the words are actually sung (typewriter-style, nothing
+ * ever flies through), one large photographic anchor object behind it, and
  * the word "sweetheart" (or the scene's emotional keyword) drawing itself
- * in script across the lower third, and a few thin line doodles. At the
- * next section the poster crossfades to the next one.
+ * in script. At the next section the screen crossfades to the next card.
  */
 
 export const TOTAL_DURATION = 179.4; // ffprobe-measured file duration
@@ -160,29 +159,4 @@ export const SCENES = [
 /** End of a scene's hold = the next scene's enter (last runs to song end). */
 export function sceneEnd(idx){
   return idx + 1 < SCENES.length ? SCENES[idx + 1].enter : TOTAL_DURATION;
-}
-
-/**
- * Thin line doodles per scene — the reference scatters a sparkle cluster
- * on one side of the anchor and a small heart/x cluster on the other.
- * Two arrangements alternate by scene so posters don't feel stamped from
- * one template; the moonlight scene swaps the sparkle for a star.
- * x/y are % of the poster column; size is a multiplier on the base size.
- */
-export function sceneDoodles(idx){
-  const A = [
-    { icon:'sparkle', x:86, y:30, size:1.4, rot:8 },
-    { icon:'heart',   x:5,  y:50, size:1.0, rot:-14 },
-    { icon:'heart',   x:11, y:57, size:0.6, rot:10 },
-    { icon:'x',       x:4,  y:58, size:0.5, rot:20 },
-  ];
-  const B = [
-    { icon:'sparkle', x:8,  y:30, size:1.3, rot:-10 },
-    { icon:'heart',   x:88, y:52, size:1.0, rot:12 },
-    { icon:'x',       x:92, y:59, size:0.5, rot:-15 },
-    { icon:'heart',   x:82, y:59, size:0.6, rot:-8 },
-  ];
-  const arr = (idx % 2 === 1 ? A : B).map(d => ({ ...d }));
-  if (SCENES[idx].id === 'moonlight') arr[0] = { ...arr[0], icon:'star' };
-  return arr;
 }

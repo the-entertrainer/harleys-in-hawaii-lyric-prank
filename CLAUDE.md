@@ -324,3 +324,101 @@ ever flies through the frame. Lessons:
   removed entirely in this build (bundle 680 KB → 118 KB) because the
   reference had no 3D and DOM text/images composite better than canvas
   sprites layered under text.
+
+## Update 3: the vintage-TV pivot — patching a glTF's texture atlas at runtime, and a nasty headless-Chromium screenshot trap
+
+The DOM/CSS poster build above was pivoted again: the whole experience now
+plays out as a broadcast on a centered 3D vintage TV's CRT screen (a
+user-supplied Sketchfab glTF), with lyric content drawn live onto a canvas
+and composited into the model's own baseColor texture every frame — see
+`src/scene/tvScene.js` + `src/scene/tvScreen.js`. Three.js came back into
+the project for this (it had been removed in the prior pivot). Lessons:
+
+- **A single-mesh/single-material glTF has no "screen" object to swap a
+  material on — the screen is just baked into one shared UV atlas.** This
+  Sketchfab TV (like a lot of low-poly game-asset exports) is one mesh, one
+  material, one 2048×2048 baseColor/metallicRoughness/normal atlas covering
+  the whole model (bezel, knobs, decals, screen glass, all in one image).
+  To find the screen's rectangle in that atlas: sample one pixel known to
+  be inside the screen face (from a downscaled preview), then flood-fill
+  (BFS over similar-colored pixels) to get its bounding box — this is
+  reliable even with a JPEG-artifact-y flat-color region, and works from a
+  plain Python/PIL script with no browser involved. **Cross-check the
+  candidate rectangle against the metallicRoughness map at the same pixel
+  region** — a screen face will have conspicuously lower roughness / higher
+  metalness than a matte bezel; if that separation isn't visually obvious,
+  you probably flood-filled the wrong region.
+- **Patch only the baseColor image, at runtime, in a canvas — never touch
+  metallicRoughness/normalMap.** Draw the atlas PNG onto an offscreen
+  canvas once at load, wrap it in one `THREE.CanvasTexture`, assign it to
+  `material.map` (dispose the old one), and leave
+  `material.metalnessMap`/`.roughnessMap`/`.normalMap` completely alone —
+  they're separate `Texture` instances from separate source images, so
+  they're structurally impossible to disturb by only ever calling
+  `atlasCtx.drawImage()` into a sub-rectangle of the atlas canvas and
+  setting `atlasTexture.needsUpdate = true`. This is *why* the model's real
+  specular highlight keeps rendering correctly on top of whatever content
+  gets drawn into that rectangle — the PBR roughness/metalness response
+  was never touched, only the color under it changed.
+- **`CanvasTexture.flipY` must match how GLTFLoader treats the model's own
+  textures, or your patched rectangle lands in the wrong place entirely.**
+  glTF's spec defines UV (0,0) as the image's top-left corner (same
+  convention as a decoded PNG/canvas pixel grid) — GLTFLoader sets
+  `flipY = false` on its own textures for exactly that reason. A
+  replacement `CanvasTexture` sampled by the *same* UV attribute needs
+  `flipY = false` too. Getting this backwards doesn't just flip the
+  content — because the whole atlas shares one UV set, it can also make
+  your rectangle's fraction-of-height math land on completely the wrong
+  band of the image (confirmed here: `flipY = true` put the patched content
+  almost entirely off the visible screen face, not just upside-down).
+- **A UV island can still be arbitrarily rotated/mirrored relative to the
+  source image even once its *position* is confirmed correct — a bounding
+  box or a symmetric checkerboard test cannot catch this, only an
+  asymmetric test glyph can.** This model's screen UV turned out to need a
+  90°-rotation-plus-mirror correction that a checkerboard-with-corner-labels
+  test left genuinely ambiguous to read (small sans-serif "TL"/"TR" corner
+  labels under an unknown rotation are surprisingly hard to eyeball
+  correctly). Switching to one giant asymmetric glyph (a capital "F" —
+  no rotational or mirror symmetry at all) filling the whole rectangle,
+  and generating reference renders of all 8 dihedral transforms
+  (identity/90°/180°/270° × mirrored) with plain PIL to compare against,
+  made the correct transform unambiguous in one comparison instead of
+  several rounds of misreading mirrored corner labels. The fix ends up
+  baked into one small helper (`applyScreenContentTransform` in
+  `tvScene.js`) that every future content draw goes through, so this
+  never needs re-solving.
+- **Fitting a single centered 3D object to an arbitrary aspect ratio is
+  just "distance so the bounding sphere fits inside the *tighter* of the
+  vertical/horizontal FOV," not the multi-object frustum-fraction technique
+  from the prior Three.js build** (that technique existed to place several
+  independent objects at specific lateral offsets across aspect ratios —
+  overkill for one static, centered hero object). Compute
+  `vHalf = verticalFovRadians/2`, `hHalf = atan(tan(vHalf) * aspect)`, then
+  `distance = sphere.radius * padding / sin(min(vHalf, hHalf))` — taking the
+  *smaller* angle always picks the actually-binding constraint (vertical on
+  a wide screen, horizontal on a narrow one), recomputed on resize. Get the
+  bounding sphere from `new THREE.Box3().setFromObject(model)` — never
+  hand-derive it from a glTF's raw accessor min/max, since a real export's
+  node hierarchy (axis-convention conversion, unit-scale nodes, per-node
+  transforms) makes manual matrix math error-prone where `Box3` just works.
+- **This sandbox's headless Chromium can silently return a blank
+  screenshot of real, correctly-rendering WebGL canvas content if the
+  Playwright script only does `page.goto()` then a bare `page.waitForTimeout()`
+  before `page.screenshot()` — with no error, no console warning, nothing.**
+  Confirmed step by step: the WebGL context creates fine, `renderer.render()`
+  runs every frame (verified via injected per-frame console logs), a plain
+  `THREE.Mesh` cube screenshots correctly, and even the real failing scene
+  screenshots correctly image the model *whenever the wait before the
+  screenshot involved any CDP polling* (`page.waitForFunction(...)`) —
+  but reproducibly returns the flat CSS background color instead of any
+  canvas content when the exact same scene is given a bare
+  `waitForTimeout(1500)` instead. The fix: **never gate a WebGL screenshot
+  behind a bare timeout in this sandbox** — wait for a real readiness
+  signal via `page.waitForFunction(() => window.__someReadyFlag !== undefined)`,
+  or at minimum interleave a throwaway poll
+  (`page.waitForFunction(() => false, { timeout: 800, polling: 50 }).catch(() => {})`)
+  during/after any timeout-based wait. This cost far more debugging time
+  than anything else in this pivot — bisect aggressively (a minimal inline
+  `<script type="module">` test page with no framework, testing one
+  variable at a time) before suspecting your own Three.js code when a
+  canvas screenshots blank but the same JS logs prove it rendered.

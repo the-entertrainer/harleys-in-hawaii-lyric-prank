@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TV debug</title>
+<style>html,body{margin:0;height:100%;background:#222;} canvas{display:block;width:100vw;height:100vh;}</style>
+</head>
+<body>
+<canvas id="tv-canvas"></canvas>
+<script type="module">
+  import { initTvScene } from '/src/scene/tvScene.js';
+  const canvas = document.getElementById('tv-canvas');
+  initTvScene(canvas, {
+    modelUrl: '../models/retro-tv/scene.gltf',
+    baseColorUrl: '../models/retro-tv/textures/material_baseColor.png',
+  }).then(scene => {
+    function loop(){ scene.render(); requestAnimationFrame(loop); }
+    loop();
+    window.__tvScene = scene;
+  }).catch(err => {
+    document.body.style.background = '#600';
+    document.title = 'ERROR';
+    console.error(err);
+    document.body.insertAdjacentHTML('beforeend', `<pre style="color:#fff;position:fixed;inset:0;white-space:pre-wrap;padding:20px;">${err.stack || err}</pre>`);
+  });
+</script>
+</body>
+</html>

@@ -1,17 +1,18 @@
 /* =====================================================================
-   My Sweetheart — Vintage Sunset Poster
-   Rebuilt to match the user's own Canva reference frame-for-frame:
-   a fixed poster composition per song section — pinned caption at top,
-   fat retro display type (Titan One) stacking on word-by-word as the
-   words are actually sung, ONE large photographic anchor rising into
-   place and holding, the key word written in connected script (Cookie)
-   across the lower third, thin line doodles — on a brick-red -> gold
-   sunset gradient. Pointer/idle parallax gives the layers depth.
+   My Sweetheart — Vintage TV Broadcast
+   The song plays out as a broadcast on a centered 3D vintage TV
+   (src/scene/tvScene.js + tvScreen.js): the CRT screen carries the
+   headline/script/sub/caption typography and the photographic anchor,
+   with real vintage noise/scanline/glitch effects, while the model's own
+   PBR material keeps rendering a real specular highlight on the glass.
+   Page-level chrome — the ambient brick-to-gold gradient, a soft
+   vignette, the progress bar and play button — stays plain DOM/CSS.
    ===================================================================== */
 
 /* Self-hosted (public/fonts/) — no external font dependency at runtime,
-   and headless smoke tests render the real typography. SIL OFL, via
-   Google Fonts; latin subsets only. */
+   and headless smoke tests render the real typography (including inside
+   the canvas-drawn TV screen). SIL OFL, via Google Fonts; latin subsets
+   only. */
 @font-face{
   font-family:'Titan One'; font-style:normal; font-weight:400; font-display:swap;
   src:url('/fonts/titan-one-400.woff2') format('woff2');
@@ -32,14 +33,10 @@
   --brick:      #a92c17;
   --gold:       #f6d97e;
 
-  /* Driven every frame by the Theatre.js mood track (src/main.js). */
+  /* Driven every frame by the Theatre.js mood track (src/main.js) — the
+     same numbers also feed the TV screen's own background wash. */
   --mood-hue: 6;
   --mood-warmth: 0.55;
-
-  /* Parallax vector, lerped in src/main.js from the pointer (desktop)
-     or a slow autonomous sway (touch). Layers multiply it differently. */
-  --px: 0;
-  --py: 0;
 }
 
 *{ box-sizing:border-box; }
@@ -57,9 +54,9 @@ body{
 }
 ::selection{ background:var(--gold); color:var(--brick); }
 
-/* ---------- BACKGROUND — the reference's sunset gradient. The bottom
-   stop's hue is nudged toward gold (+38 max lands at 54 = still yellow-
-   gold at every scene hue 5..16 — never green). ---------- */
+/* ---------- BACKGROUND — ambient sunset gradient behind the centered TV.
+   The bottom stop's hue is nudged toward gold (+38 max lands at 54 —
+   still yellow-gold at every scene hue 5..16, never green). ---------- */
 #bg{
   position:fixed; inset:0; z-index:0;
   background:
@@ -69,18 +66,8 @@ body{
       hsl(calc(var(--mood-hue) + 18) 55% calc(51% + var(--mood-warmth) * 8%)) 72%,
       hsl(calc(var(--mood-hue) + 34) 62% calc(66% + var(--mood-warmth) * 9%)) 100%);
 }
-
-#grain{
-  position:fixed; inset:0; z-index:2; pointer-events:none; opacity:.06;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-}
-#scanlines{
-  position:fixed; inset:0; z-index:2; pointer-events:none;
-  background:repeating-linear-gradient(0deg,
-    rgba(46,12,4,.06) 0 1px, transparent 1px 3px);
-}
 #vignette{
-  position:fixed; inset:0; z-index:3; pointer-events:none;
+  position:fixed; inset:0; z-index:1; pointer-events:none;
   background:radial-gradient(130% 100% at 50% 42%, transparent 55%, rgba(60,10,4,.28) 100%);
 }
 
@@ -92,164 +79,31 @@ body{
 }
 #progress-fill{ position:absolute; left:0; top:env(safe-area-inset-top); bottom:0; width:0%; background:var(--cream); opacity:.85; }
 
-/* ---------- STAGE — a portrait poster column, exactly the reference's
-   9:16 composition, centered whatever the screen shape ---------- */
+/* ---------- STAGE — the 3D TV, centered whatever the screen shape.
+   The canvas is the WebGL output; tvScene.js sizes its drawing buffer
+   itself (devicePixelRatio-aware), CSS just makes it fill the viewport. ---------- */
 #stage{
   position:fixed; inset:0; z-index:5;
-  display:flex; align-items:center; justify-content:center;
 }
-.poster-col{
-  position:relative;
-  width:min(100vw, 62dvh, 560px);
-  height:100dvh;
-  container-type:inline-size;
-}
-
-#caption{
-  position:absolute; top:calc(5.5% + env(safe-area-inset-top)); left:50%;
-  transform:translate(calc(-50% + var(--px) * -4px), calc(var(--py) * -3px));
-  width:86%;
-  text-align:center;
-  font-family:'Oswald',sans-serif; font-weight:500;
-  font-size:clamp(.72rem, 3.4cqw, 1.05rem);
-  letter-spacing:.09em;
-  color:var(--cream);
-  opacity:0;
-  z-index:8;
-}
-
-#poster{ position:absolute; inset:0; transition:opacity .6s ease; }
-#poster.hidden{ opacity:0; }
-
-.scene{
+#tv-canvas{
   position:absolute; inset:0;
-  visibility:hidden;
-}
-
-/* ---------- ANCHOR — the one big photographic cutout ----------
-   Lives in its own flex zone between headline and script (see
-   .scene-text), sized by max-width AND the zone's height, so it cannot
-   collide with text on any viewport. `--kiss` lets the image tuck a
-   bounded couple of dvh up behind the headline, like the reference's
-   horn; that is the only sanctioned intrusion. */
-.anchor-box{
-  flex:1 1 0; min-height:0; width:100%;
-  position:relative; z-index:2;
-  display:flex; align-items:flex-end; justify-content:center;
-  margin-top:calc(var(--kiss, 0) * -1dvh);
-}
-.anchor{
-  position:relative;
-  height:100%; width:var(--aw, 60%);
-  margin-left:var(--ax, 0%);
-  transform:translate(calc(var(--px) * -14px), calc(var(--ay, 0px) + var(--py) * -10px)) rotate(var(--arot, 0deg));
-  pointer-events:none;
-}
-.anchor img{
   width:100%; height:100%;
-  display:block; user-select:none;
-  object-fit:contain; object-position:bottom center;
-}
-.anchor::after{
-  content:''; position:absolute; left:50%; bottom:-2.2%;
-  width:78%; height:7%;
-  transform:translateX(-50%);
-  background:radial-gradient(50% 50% at 50% 50%, rgba(70,14,4,.32), transparent 70%);
+  display:block;
+  touch-action:none;
 }
 
-/* ---------- DOODLES — thin cream line work ---------- */
-.doodle{
-  position:absolute; z-index:3; pointer-events:none;
-  width:calc(clamp(26px, 7.5cqw, 44px) * var(--dsize, 1));
-  color:var(--cream);
-  transform:translate(calc(var(--px) * -22px), calc(var(--py) * -16px)) rotate(var(--drot, 0deg)) scale(var(--dscale, 1));
-  opacity:0;
+/* ---------- CREDIT — required visible attribution for the CC-BY-NC-4.0
+   Sketchfab TV model (see ATTRIBUTION.md), kept quiet and out of the way. ---------- */
+#tv-credit{
+  position:fixed; right:max(10px, env(safe-area-inset-right));
+  bottom:max(10px, env(safe-area-inset-bottom));
+  z-index:45;
+  font-family:'Oswald',sans-serif; font-size:.62rem; letter-spacing:.03em;
+  color:var(--cream); opacity:.45;
+  text-decoration:none;
+  transition:opacity .2s ease;
 }
-.doodle svg{ width:100%; height:auto; display:block; stroke-width:1.6; }
-
-/* ---------- TEXT COMPOSITION ---------- */
-/* The whole poster is one flex column with a fixed dvh budget: caption
-   clearance on top, play-button clearance at the bottom, and the anchor's
-   zone absorbing all remaining height between headline and script. */
-.scene-text{
-  position:absolute; inset:0; z-index:4;
-  display:flex; flex-direction:column; align-items:center;
-  padding:12dvh 4% max(13dvh, 122px);
-  transform:translate(calc(var(--px) * -6px), calc(var(--py) * -4px));
-  pointer-events:none;
-}
-
-.slot{ text-align:center; }
-
-.slot-headline{
-  flex:none; z-index:1;
-  font-family:'Titan One',sans-serif; font-weight:400;
-  font-size:clamp(2.1rem, 14.5cqw, 4.9rem);
-  line-height:.99;
-  color:var(--cream);
-  max-width:96%;
-  text-wrap:balance;
-  text-shadow:
-    2px 0 0 rgba(255,84,56,.20), -2px 0 0 rgba(96,228,255,.14),
-    0 3px 0 rgba(96,18,6,.16), 0 12px 24px rgba(96,18,6,.2);
-}
-
-/* The script word sits over the anchor's base, pushed to the lower third
-   like the reference's "Sweetheart". */
-.slot-script{
-  flex:none; z-index:3;
-  margin-top:calc(var(--soverlap, 0) * -1dvh);
-  margin-bottom:2.6dvh;
-  font-family:'Cookie',cursive; font-weight:400;
-  font-size:clamp(4rem, 26cqw, 8.6rem);
-  line-height:.9;
-  color:var(--cream-soft);
-  text-shadow:
-    1.5px 0 0 rgba(255,84,56,.18), -1.5px 0 0 rgba(96,228,255,.12),
-    0 3px 5px rgba(96,18,6,.42), 0 10px 22px rgba(96,18,6,.22);
-}
-.script-word{ display:inline-block; clip-path:inset(-20% 104% -20% -2%); }
-
-.slot-sub{
-  font-family:'Titan One',sans-serif; font-weight:400;
-  font-size:clamp(1.05rem, 5.4cqw, 1.9rem);
-  line-height:1.22;
-  color:var(--rust);
-  max-width:88%;
-  text-wrap:balance;
-}
-.slot-sub + .slot-sub{ margin-top:.5em; }
-
-
-/* Spoken banter (intro) / whispered outro — small tracked caps, like a
-   second caption. */
-.slot-spoken{
-  font-family:'Oswald',sans-serif; font-weight:500;
-  font-size:clamp(.82rem, 4cqw, 1.2rem);
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  line-height:1.7;
-  color:var(--cream);
-  max-width:84%;
-}
-.slot-spoken:first-child{ margin-top:4dvh; }
-.slot-spoken + .slot-spoken{ margin-top:1.1em; }
-
-/* The finale's whispered tag, after the subs, stays small and quiet. */
-.slot-sub ~ .slot-spoken{
-  margin-top:.9em;
-  font-size:clamp(.68rem, 3cqw, .95rem);
-  opacity:.85;
-}
-
-/* ---------- LETTERS — the typewriter reveal ---------- */
-.w{ display:inline; }
-.ltr{ visibility:hidden; }
-.ltr.on{ visibility:visible; }
-
-@media (prefers-reduced-motion: reduce){
-  .anchor, .doodle, .scene-text, #caption{ transition:none !important; }
-}
+#tv-credit:hover, #tv-credit:focus{ opacity:.85; }
 
 /* ---------- PLAY BUTTON ---------- */
 #play-btn{
@@ -275,49 +129,6 @@ body{
 #play-btn.is-playing #icon-play{ opacity:0; transform:scale(.6); }
 #play-btn.is-playing #icon-pause{ opacity:1; transform:scale(1); }
 
-/* ---------- FINALE CARD ---------- */
-#finale{
-  position:fixed; inset:0; z-index:48;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem;
-  pointer-events:none; opacity:0; transition:opacity 1s ease;
-}
-#finale.visible{ opacity:1; pointer-events:auto; }
-.finale-photo{
-  position:absolute; width:clamp(80px, 13vw, 150px); pointer-events:none;
-  opacity:0; transform:translateY(16px) scale(.6);
-  transition:opacity 1s ease, transform 1.2s cubic-bezier(.34,1.56,.64,1);
-  filter:drop-shadow(0 12px 24px rgba(70,14,4,.35));
-}
-#finale.visible .finale-photo{ opacity:.95; transform:translateY(0) scale(1); }
-.fp-1{ top:12%; left:10%; transition-delay:.5s; }
-.fp-2{ top:16%; right:11%; transition-delay:.7s; }
-.fp-3{ bottom:13%; left:13%; transition-delay:.9s; transform:translateY(16px) scale(.6) rotate(-6deg); }
-.finale-heart{
-  width:clamp(96px, 16vw, 150px); opacity:0; transform:scale(.4);
-  transition:opacity .7s ease .2s, transform .9s cubic-bezier(.34,1.56,.64,1) .2s;
-  animation:heartbeat 1.15s ease-in-out infinite;
-  animation-play-state:paused;
-  filter:drop-shadow(0 12px 26px rgba(90,18,6,.4));
-}
-#finale.visible .finale-heart{ opacity:1; transform:scale(1); animation-play-state:running; }
-@keyframes heartbeat{ 0%,100%{ transform:scale(1); } 22%{ transform:scale(1.12); } 40%{ transform:scale(.97); } 55%{ transform:scale(1.06); } }
-.finale-text{ text-align:center; position:relative; z-index:1; }
-.finale-text span{
-  display:block; opacity:0; transform:translateY(18px);
-  transition:opacity .8s ease, transform .8s cubic-bezier(.34,1.56,.64,1);
-}
-.finale-text .line1{
-  font-family:'Oswald',sans-serif; font-weight:500; letter-spacing:.16em;
-  font-size:clamp(.9rem,3vw,1.2rem); color:var(--cream); transition-delay:.9s;
-}
-.finale-text .line2{
-  font-family:'Cookie',cursive; font-size:clamp(3.4rem,11vw,5.6rem);
-  color:var(--cream-soft); transition-delay:1.15s;
-  text-shadow:0 4px 18px rgba(96,18,6,.3);
-}
-#finale.visible .finale-text span{ opacity:1; transform:translateY(0); }
-
 @media (prefers-reduced-motion: reduce){
-  #finale, .finale-heart, .finale-photo, .finale-text span, #play-btn{ transition-duration:.25s !important; }
-  .finale-heart{ animation:none; }
+  #play-btn{ transition-duration:.1s; }
 }

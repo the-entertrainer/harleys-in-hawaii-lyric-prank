@@ -65,18 +65,16 @@ sung/unsung sweep stay outside Theatre.js on purpose — they're a discrete
 state change at a real timestamp, not a continuously tweened value; see the
 doc comment on `main()` in `src/main.js`.
 
-## Photographic cutouts (Three.js parallax layers)
+## Photographic cutouts
 
 The visual direction — a warm sunset palette, real photographic vintage
-objects, thin line-art doodles — was set by a Canva animation the user
-designed and shared as a reference. Every decorative "photo layer" in
-`PHOTO_LAYERS` (`src/lyrics-data.mjs`) is a **real photograph**, not
-clip art or an illustration: licensed from Adobe Stock's free tier, then
-background-removed with the Adobe Photoshop API (`image_remove_background`)
-into a genuine transparent-alpha PNG. They're rendered as camera-facing
-Three.js sprites (`src/scene/photoLayers.js`) drifting through parallax
-depth (see `DEPTH_TIERS` — near/mid/far lanes control size, speed, and how
-close to the centered text column each one is allowed to drift).
+objects — was set by a Canva animation the user designed and shared as a
+reference. Every scene's `anchor.img` in `SCENES` (`src/lyrics-data.mjs`) is
+a **real photograph**, not clip art or an illustration: licensed from Adobe
+Stock's free tier, then background-removed with the Adobe Photoshop API
+(`image_remove_background`) into a genuine transparent-alpha PNG. Each is
+drawn onto the TV's CRT screen canvas (`src/scene/tvScreen.js`) as that
+scene's broadcast anchor, one per song section.
 
 | File | Adobe Stock ID | Search term | Used for |
 |---|---|---|---|
@@ -105,15 +103,49 @@ Licensed via Adobe Stock's free tier (`asset_search` +
 `image_remove_background`, then downscaled to a reasonable web size — see
 `public/assets/photo/`.
 
-## Doodle line-art (Lucide, MIT)
+## 3D TV model (Sketchfab, CC BY-NC 4.0)
 
-The thin outline hearts/sparkles/star/x accents drifting near the photo
-layers (`DOODLE_LAYERS` in `src/lyrics-data.mjs`, rendered from
-`src/doodles/*.svg`) are [Lucide](https://lucide.dev) icons — MIT licensed,
-free for any use, no attribution required. Lucide is a community-maintained
-fork of Feather Icons with a consistent 2px stroke on a 24px grid, which is
-what gives them the reference design's clean line-art look rather than a
-flat colored-icon look.
+The centerpiece of the TV-broadcast pivot: **"TV, Old TV, Retro TV"** by
+[fan7774](https://sketchfab.com/denyshroshko), sourced from
+[Sketchfab](https://sketchfab.com/3d-models/tv-old-tv-retro-tv-f13b9a45c0d649dc90ebac5f7717cebf).
+Licensed **CC BY-NC 4.0** — attribution required, non-commercial use only
+(this page is a personal, non-commercial gift, so that's satisfied; if this
+project's use ever changed to commercial, this asset would need replacing
+or re-licensing). Required credit line, verbatim from the model's own
+`license.txt`:
+
+> This work is based on "TV, Old TV, Retro TV"
+> (https://sketchfab.com/3d-models/tv-old-tv-retro-tv-f13b9a45c0d649dc90ebac5f7717cebf)
+> by fan7774 (https://sketchfab.com/denyshroshko) licensed under CC-BY-NC-4.0
+> (http://creativecommons.org/licenses/by-nc/4.0/)
+
+Shipped as `public/models/retro-tv/{scene.gltf,scene.bin,textures/*.png}`,
+downscaled from the source's 2048×2048 texture atlas to 1024×1024 (see
+CLAUDE.md for why: a mobile-first page shouldn't ship 8.5MB of textures
+when 1024px still reads sharp on a screen this size). A visible on-page
+credit link sits bottom-right (`#tv-credit` in `index.html`/`src/style.css`)
+alongside this file, per the license's attribution requirement.
+
+The model is a single mesh/material sharing one texture atlas — there's no
+separate "screen" sub-object. `src/scene/tvScene.js` finds the screen's UV
+island by pixel-analyzing the baseColor atlas (a flood-fill from a sampled
+pixel inside the flat gray screen rectangle, cross-checked against the
+metallicRoughness map: low roughness/higher metalness there vs. the matte
+wood bezel everywhere else — confirming it's the intended glossy glass) and
+only ever repaints baseColor pixels inside that rectangle at runtime with
+the live lyric broadcast (`src/scene/tvScreen.js`). The metallicRoughness
+and normal maps are never touched, so the model's own PBR specular
+highlight keeps rendering on the glass exactly as authored.
+
+## Doodle line-art (Lucide, MIT) — removed
+
+The thin outline hearts/sparkles/star/x accents that used to drift near the
+photo anchor in the DOM poster build (`src/doodles/*.svg`,
+[Lucide](https://lucide.dev), MIT licensed) were removed in the TV-broadcast
+pivot — they didn't read well shrunk onto a small CRT screen alongside the
+photo and typography, so the design was simplified rather than forcing them
+in. No replacement needed: MIT-licensed, so removing them raises no
+licensing loose end.
 
 ## Fonts
 
@@ -148,3 +180,20 @@ objects instead of abstract glass or flat icons, and a rounded-display +
 script-accent type pairing. The glass-object and OpenMoji-icon assets from
 that build were removed rather than kept alongside the new direction, to
 avoid two competing visual languages on the same page.
+
+## What changed again: the TV-broadcast pivot
+
+The DOM/CSS poster-scene build above was itself later replaced: the whole
+experience now plays out as a broadcast on a centered 3D vintage TV's CRT
+screen (see the "3D TV model" section above and `src/scene/tvScene.js` +
+`src/scene/tvScreen.js`). The headline/script/sub typography, the
+photographic anchor, and the pinned caption all moved from DOM elements
+into a canvas drawn live and composited onto the model's screen texture,
+with real vintage scanline/static/glitch/chromatic-aberration effects layered
+on top — while the model's own PBR material keeps a genuine specular
+highlight rendering on the glass. The small heart/sparkle/star doodles were
+dropped (see above); the closing card became "Made with love by Naveen,"
+shown as the TV's last broadcast instead of a separate full-page photo
+montage, so the whole experience reads as one continuous "it's all
+happening in the TV" arc. Three.js was reintroduced for this pivot (it had
+been removed in an earlier build, see CLAUDE.md).

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>My Sweetheart</title>
-<meta name="description" content="A Theatre.js-choreographed lyric poster for a 1910 love song. One button. Press play.">
+<meta name="description" content="A 1910 love song, playing on a vintage TV. One button. Press play.">
 <meta name="theme-color" content="#a92c17">
 <link rel="preload" href="/fonts/titan-one-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/cookie-400.woff2" as="font" type="font/woff2" crossorigin>
@@ -13,30 +13,16 @@
 <body>
 
 <div id="bg"></div>
-<div id="grain"></div>
-<div id="scanlines"></div>
 <div id="vignette"></div>
 <div id="progress"><div id="progress-fill"></div></div>
 
 <audio id="track" src="audio/let-me-call-you-sweetheart.mp3" preload="metadata"></audio>
 
 <main id="stage">
-  <div class="poster-col">
-    <div id="caption"></div>
-    <div id="poster"></div>
-  </div>
+  <canvas id="tv-canvas"></canvas>
 </main>
 
-<div id="finale">
-  <img class="finale-photo fp-1" src="assets/photo/rose.png" alt="">
-  <img class="finale-photo fp-2" src="assets/photo/ring.png" alt="">
-  <img class="finale-photo fp-3" src="assets/photo/pearl-necklace.png" alt="">
-  <img class="finale-heart" src="assets/photo/rose.png" alt="">
-  <div class="finale-text">
-    <span class="line1">FROM NAVEEN,</span>
-    <span class="line2">with love</span>
-  </div>
-</div>
+<a id="tv-credit" href="https://sketchfab.com/3d-models/tv-old-tv-retro-tv-f13b9a45c0d649dc90ebac5f7717cebf" target="_blank" rel="noopener">TV model by fan7774 (CC BY-NC)</a>
 
 <button id="play-btn" aria-label="Play">
   <span class="icon-wrap">

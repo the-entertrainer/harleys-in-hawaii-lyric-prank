@@ -22,7 +22,6 @@
  *                      (from below, easing out over ~1.1s), then a gentle
  *                      idle float for the whole hold so the poster stays
  *                      alive without ever leaving its pose
- *  - `doodle-${i}-${j}` staggered fade-ins + a slow rotate wiggle
  *  - `mood`            background hue/warmth crossfade between scenes
  *  - `caption`         the pinned top caption's one-time fade-in
  *
@@ -35,7 +34,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SCENES, sceneEnd, sceneDoodles, CAPTION, TOTAL_DURATION } from '../src/lyrics-data.mjs';
+import { SCENES, sceneEnd, CAPTION, TOTAL_DURATION } from '../src/lyrics-data.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -120,24 +119,6 @@ SCENES.forEach((scene, i) => {
     pushKf(a, end, { opacity: 1 });
     addObject(`anchor-${i}`, a);
   }
-
-  // Doodles: staggered pops shortly after the scene stands, then a slow
-  // wiggle so the line work feels sketched-on rather than printed.
-  sceneDoodles(i).forEach((d, j) => {
-    const b = {};
-    const at = start + 0.5 + j * 0.22;
-    pushKf(b, at, { opacity: 0, scale: 0.5, rot: d.rot - 14 });
-    pushKf(b, at + 0.45, { opacity: 0.9, scale: 1, rot: d.rot });
-    let t = at + 0.45;
-    let phase = 0;
-    while (t + 2.7 < end){
-      t += 2.7;
-      phase ^= 1;
-      pushKf(b, t, { rot: d.rot + (phase ? 4 : -3) });
-    }
-    pushKf(b, end, { opacity: 0.9 });
-    addObject(`doodle-${i}-${j}`, b);
-  });
 });
 
 // Background mood — hold each scene's hue, then ramp across the crossfade
