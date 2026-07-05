@@ -17,6 +17,26 @@ const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // actual pixel size ends up being.
 export const SCREEN_UV = { u0: 0.0186, u1: 0.2129, v0: 0.4932, v1: 0.7417 };
 
+// ?debuguv=1 paints a labeled checkerboard into the screen rect instead of
+// wiring up live content, to visually re-check the rect against the real
+// render (see tools/tv-debug.html) — kept as permanent debug tooling since
+// this rect has needed re-verification more than once already.
+const DEBUG_UV = typeof location !== 'undefined' && new URLSearchParams(location.search).has('debuguv');
+
+function drawDebugCheckerboard(ctx, x, y, w, h){
+  const cols = 6, rows = 8;
+  const colors = ['#ff2d55', '#2dd4ff', '#ffd60a', '#34c759'];
+  for (let r = 0; r < rows; r++){
+    for (let c = 0; c < cols; c++){
+      ctx.fillStyle = colors[(r + c) % colors.length];
+      ctx.fillRect(x + (c / cols) * w, y + (r / rows) * h, w / cols, h / rows);
+    }
+  }
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+}
+
 // This model's screen UV island turned out to be unwrapped mirrored + rotated
 // 90° relative to a "reads upright" orientation — found empirically with an
 // asymmetric-glyph ("F") render/screenshot/compare loop (a pure bounding-box
@@ -28,10 +48,20 @@ function applyScreenContentTransform(ctx, screenRect){
   // Order matters here (matrix composition isn't commutative) — this is
   // the exact order confirmed correct by the asymmetric-glyph test: rotate
   // first, then mirror. Swapping the order nets a 180°-rotated result.
+  //
+  // A 90° rotation swaps width and height, so the content drawn AFTER this
+  // transform must be sized (screenRect.h, screenRect.w) — swapped — not
+  // (w, h). Using (w, h) here was a real bug: the composited content's
+  // atlas-space bounding box came out h-wide by w-tall instead of
+  // w-wide by h-tall, which (since this rect isn't square) left content
+  // short of the rect on two edges and overflowing the other two —
+  // exactly the "cropped on the sides, leaking at the top" the deployed
+  // preview showed. See compositeScreenContent's matching swapped
+  // drawImage size below.
   ctx.translate(screenRect.x + screenRect.w / 2, screenRect.y + screenRect.h / 2);
   ctx.rotate(90 * Math.PI / 180);
   ctx.scale(1, -1);
-  ctx.translate(-screenRect.w / 2, -screenRect.h / 2);
+  ctx.translate(-screenRect.h / 2, -screenRect.w / 2);
 }
 
 function fitDistance(camera, sphere, padding = 1.2){
@@ -110,6 +140,17 @@ export async function initTvScene(canvas, opts = {}){
     h: Math.round((SCREEN_UV.v1 - SCREEN_UV.v0) * atlasCanvas.height),
   };
 
+  // Routed through the same transform + swapped destination size as real
+  // content (applyScreenContentTransform / compositeScreenContent below),
+  // so this debug view actually exercises the real code path instead of
+  // hiding the width/height-swap bug that path used to have.
+  if (DEBUG_UV){
+    atlasCtx.save();
+    applyScreenContentTransform(atlasCtx, screenRect);
+    drawDebugCheckerboard(atlasCtx, 0, 0, screenRect.h, screenRect.w);
+    atlasCtx.restore();
+  }
+
   const atlasTexture = new THREE.CanvasTexture(atlasCanvas);
   atlasTexture.flipY = false;
   atlasTexture.colorSpace = THREE.SRGBColorSpace;
@@ -154,15 +195,17 @@ export async function initTvScene(canvas, opts = {}){
    * matching emissive rect), applying the model-specific correction
    * transform, then flag both textures dirty. */
   function compositeScreenContent(sourceCanvas){
+    // Destination size is swapped (h, w) to match the swapped translate in
+    // applyScreenContentTransform — see the comment there.
     atlasCtx.save();
     applyScreenContentTransform(atlasCtx, screenRect);
-    atlasCtx.drawImage(sourceCanvas, 0, 0, screenRect.w, screenRect.h);
+    atlasCtx.drawImage(sourceCanvas, 0, 0, screenRect.h, screenRect.w);
     atlasCtx.restore();
     atlasTexture.needsUpdate = true;
 
     emissiveCtx.save();
     applyScreenContentTransform(emissiveCtx, screenRect);
-    emissiveCtx.drawImage(sourceCanvas, 0, 0, screenRect.w, screenRect.h);
+    emissiveCtx.drawImage(sourceCanvas, 0, 0, screenRect.h, screenRect.w);
     emissiveCtx.restore();
     emissiveTexture.needsUpdate = true;
   }
@@ -178,7 +221,7 @@ export async function initTvScene(canvas, opts = {}){
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
   const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.35, 0.3, 0.86,
+    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.28, 0.12, 0.88,
   );
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());

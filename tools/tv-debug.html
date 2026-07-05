@@ -14,6 +14,14 @@
     modelUrl: '../models/retro-tv/scene.gltf',
     baseColorUrl: '../models/retro-tv/textures/material_baseColor.png',
   }).then(scene => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('yaw') || params.has('pitch') || params.has('dist')){
+      scene.setShot({
+        yaw: (parseFloat(params.get('yaw')) || 0) * Math.PI / 180,
+        pitch: (parseFloat(params.get('pitch')) || 0) * Math.PI / 180,
+        distanceMul: params.has('dist') ? parseFloat(params.get('dist')) : 1,
+      });
+    }
     function loop(){ scene.render(); requestAnimationFrame(loop); }
     loop();
     window.__tvScene = scene;
