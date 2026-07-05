@@ -81,13 +81,19 @@ const sceneEls = SCENES.map((scene, i) => {
   el.className = 'scene';
   el.style.opacity = i === 0 ? 1 : 0;
 
+  // The anchor is a flow item in the poster's flex column — contained in
+  // its own zone between headline and script so it cannot collide with
+  // text on any viewport (see .anchor-box in style.css).
+  const anchorBox = document.createElement('div');
+  anchorBox.className = 'anchor-box';
+  anchorBox.style.setProperty('--kiss', scene.anchor.kiss ?? 0);
   const anchorWrap = document.createElement('div');
   anchorWrap.className = 'anchor';
-  anchorWrap.style.width = scene.anchor.w + '%';
-  anchorWrap.style.left = `calc(50% + ${scene.anchor.x}%)`;
-  anchorWrap.style.bottom = scene.anchor.y + '%';
+  anchorWrap.style.setProperty('--aw', (scene.anchor.w ?? 60) + '%');
+  anchorWrap.style.setProperty('--ax', (scene.anchor.x ?? 0) + '%');
+  anchorWrap.style.setProperty('--arot', (scene.anchor.rot ?? 0) + 'deg');
   anchorWrap.innerHTML = `<img src="${assetPath(scene.anchor.img)}" alt="" loading="lazy" draggable="false">`;
-  el.appendChild(anchorWrap);
+  anchorBox.appendChild(anchorWrap);
 
   const doodleEls = sceneDoodles(i).map(d => {
     const dEl = document.createElement('div');
@@ -102,7 +108,17 @@ const sceneEls = SCENES.map((scene, i) => {
 
   const text = document.createElement('div');
   text.className = 'scene-text';
-  for (const slot of scene.slots) text.appendChild(buildSlot(slot));
+  let anchorPlaced = false;
+  for (const slot of scene.slots){
+    if (!anchorPlaced && (slot.type === 'script' || slot.type === 'sub')){
+      text.appendChild(anchorBox);
+      anchorPlaced = true;
+    }
+    const slotEl = buildSlot(slot);
+    if (slot.type === 'script') slotEl.style.setProperty('--soverlap', scene.anchor.overlap ?? 0);
+    text.appendChild(slotEl);
+  }
+  if (!anchorPlaced) text.appendChild(anchorBox);
   el.appendChild(text);
 
   posterEl.appendChild(el);

@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
 
 const BASE_URL = process.env.SMOKE_URL || 'http://127.0.0.1:5183';
 const VIEWPORT = process.env.SMOKE_MOBILE
-  ? { width: 390, height: 844 }
+  ? { width: 390, height: 660 }
   : { width: 1400, height: 900 };
 
 // Timestamps chosen to hit each poster mid-composition: intro banter,
