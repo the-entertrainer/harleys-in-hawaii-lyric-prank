@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 export const IS_MOBILE = matchMedia('(max-width: 640px)').matches;
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -44,8 +48,9 @@ export async function initTvScene(canvas, opts = {}){
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE, powerPreference: 'high-performance', alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_MOBILE ? 1.6 : 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  // Transparent clear — the page's own #bg ambient gradient (CSS, behind
-  // the canvas) should show through everywhere the TV model doesn't cover.
+  // Transparent clear — the page's own #bg (now a near-black cinematic
+  // ambience, CSS, behind the canvas) shows through everywhere the TV
+  // model doesn't cover, so the glowing screen reads against real dark.
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -108,33 +113,83 @@ export async function initTvScene(canvas, opts = {}){
   const atlasTexture = new THREE.CanvasTexture(atlasCanvas);
   atlasTexture.flipY = false;
   atlasTexture.colorSpace = THREE.SRGBColorSpace;
+  // Disabling mipmaps stops texture-atlas "UV bleed" — without this, the
+  // GPU's mip pyramid blends the screen rect's high-contrast text with the
+  // wood-bezel texels just outside it at minified distances, showing a
+  // faint sliver of screen content smeared above the actual glass. The
+  // canvas is already supersampled in tvScreen.js, so plain bilinear
+  // filtering (no mip chain) still looks sharp at normal viewing distance.
+  atlasTexture.generateMipmaps = false;
+  atlasTexture.minFilter = THREE.LinearFilter;
+  atlasTexture.magFilter = THREE.LinearFilter;
   material.map?.dispose();
   material.map = atlasTexture;
+
+  // ---- Emissive glow ---------------------------------------------------
+  // A second atlas-sized canvas, black everywhere except the screen rect
+  // (which mirrors the live broadcast content) — so only the CRT glass
+  // itself glows/blooms, never the wood bezel or knobs, no matter how
+  // bright the on-screen content gets.
+  const emissiveCanvas = document.createElement('canvas');
+  emissiveCanvas.width = atlasCanvas.width;
+  emissiveCanvas.height = atlasCanvas.height;
+  const emissiveCtx = emissiveCanvas.getContext('2d');
+  emissiveCtx.fillStyle = '#000';
+  emissiveCtx.fillRect(0, 0, emissiveCanvas.width, emissiveCanvas.height);
+
+  const emissiveTexture = new THREE.CanvasTexture(emissiveCanvas);
+  emissiveTexture.flipY = false;
+  emissiveTexture.colorSpace = THREE.SRGBColorSpace;
+  emissiveTexture.generateMipmaps = false;
+  emissiveTexture.minFilter = THREE.LinearFilter;
+  emissiveTexture.magFilter = THREE.LinearFilter;
+  material.emissiveMap?.dispose();
+  material.emissiveMap = emissiveTexture;
+  material.emissive = new THREE.Color(0xffffff);
+  material.emissiveIntensity = 1.4;
   material.needsUpdate = true;
 
   /** Composite a screen-content source canvas (drawn normally, upright, at
-   * whatever its own native w x h is) into the atlas's screen rect, applying
-   * the model-specific correction transform, then flag the texture dirty. */
+   * whatever its own native w x h is) into the atlas's screen rect (and the
+   * matching emissive rect), applying the model-specific correction
+   * transform, then flag both textures dirty. */
   function compositeScreenContent(sourceCanvas){
     atlasCtx.save();
     applyScreenContentTransform(atlasCtx, screenRect);
     atlasCtx.drawImage(sourceCanvas, 0, 0, screenRect.w, screenRect.h);
     atlasCtx.restore();
     atlasTexture.needsUpdate = true;
+
+    emissiveCtx.save();
+    applyScreenContentTransform(emissiveCtx, screenRect);
+    emissiveCtx.drawImage(sourceCanvas, 0, 0, screenRect.w, screenRect.h);
+    emissiveCtx.restore();
+    emissiveTexture.needsUpdate = true;
   }
+
+  // ---- Bloom post-processing ------------------------------------------
+  // Threshold tuned so only the emissive screen glow (and its own bright
+  // specular highlight) blooms — the PBR-lit wood bezel stays clean.
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.85, 0.55, 0.72,
+  );
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
 
   // ---- Framing -----------------------------------------------------
   const box = new THREE.Box3().setFromObject(model);
   const sphere = box.getBoundingSphere(new THREE.Sphere());
-  const baseCameraPos = new THREE.Vector3();
+  let baseDist = 0;
 
   function frame(){
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
+    composer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    const dist = fitDistance(camera, sphere, 1.2);
-    baseCameraPos.set(sphere.center.x, sphere.center.y, sphere.center.z + dist);
+    baseDist = fitDistance(camera, sphere, 1.2);
   }
   frame();
   window.addEventListener('resize', frame);
@@ -142,24 +197,47 @@ export async function initTvScene(canvas, opts = {}){
   let px = 0, py = 0;
   function setParallax(nx, ny){ px = nx; py = ny; }
 
+  // ---- Camera choreography --------------------------------------------
+  // Driven by Theatre.js (see tools/build-theatre-state.mjs's `camera`
+  // track): yaw/pitch orbit the base framing, distanceMul dollies in/out,
+  // roll gives an occasional subtle dutch tilt. Theatre's own bezier
+  // keyframe interpolation is what makes cuts/dollies smooth — this just
+  // applies whatever value it's given each frame.
+  let shotYaw = 0, shotPitch = 0, shotDistanceMul = 1, shotRoll = 0;
+  function setShot(s){
+    if (s.yaw !== undefined) shotYaw = s.yaw;
+    if (s.pitch !== undefined) shotPitch = s.pitch;
+    if (s.distanceMul !== undefined) shotDistanceMul = s.distanceMul;
+    if (s.roll !== undefined) shotRoll = s.roll;
+  }
+
   function render(){
     if (!REDUCED_MOTION){
-      const dist = camera.position.distanceTo(sphere.center) || 1;
+      const dist = baseDist * shotDistanceMul;
+      // Parallax is a small nudge on top of the choreographed shot, scaled
+      // down on tight close-ups so it doesn't read as jitter.
+      const parallaxScale = Math.min(shotDistanceMul, 1) * 0.05;
+      const yaw = shotYaw + px * parallaxScale;
+      const pitch = shotPitch - py * parallaxScale * 0.7;
       camera.position.set(
-        baseCameraPos.x + px * dist * 0.05,
-        baseCameraPos.y - py * dist * 0.035,
-        baseCameraPos.z,
+        sphere.center.x + Math.sin(yaw) * Math.cos(pitch) * dist,
+        sphere.center.y + Math.sin(pitch) * dist,
+        sphere.center.z + Math.cos(yaw) * Math.cos(pitch) * dist,
       );
+      camera.up.set(0, 1, 0);
+      camera.lookAt(sphere.center);
+      if (shotRoll) camera.rotateZ(shotRoll);
     } else {
-      camera.position.copy(baseCameraPos);
+      camera.position.set(sphere.center.x, sphere.center.y, sphere.center.z + baseDist);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(sphere.center);
     }
-    camera.lookAt(sphere.center);
-    renderer.render(scene, camera);
+    composer.render();
   }
 
   return {
     renderer, scene, camera, model,
     screenRect, atlasTexture, compositeScreenContent,
-    render, resize: frame, setParallax,
+    render, resize: frame, setParallax, setShot,
   };
 }

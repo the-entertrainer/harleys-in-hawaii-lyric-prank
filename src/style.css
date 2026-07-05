@@ -32,17 +32,12 @@
   --rust:       #7d3117;
   --brick:      #a92c17;
   --gold:       #f6d97e;
-
-  /* Driven every frame by the Theatre.js mood track (src/main.js) — the
-     same numbers also feed the TV screen's own background wash. */
-  --mood-hue: 6;
-  --mood-warmth: 0.55;
 }
 
 *{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; height:100%; }
 body{
-  background:var(--brick);
+  background:#050403;
   color:var(--cream);
   font-family:'Oswald',sans-serif;
   overflow:hidden;
@@ -54,21 +49,17 @@ body{
 }
 ::selection{ background:var(--gold); color:var(--brick); }
 
-/* ---------- BACKGROUND — ambient sunset gradient behind the centered TV.
-   The bottom stop's hue is nudged toward gold (+38 max lands at 54 —
-   still yellow-gold at every scene hue 5..16, never green). ---------- */
+/* ---------- BACKGROUND — a dark room around the TV, not a sunset: the
+   broadcast's own warm mood wash lives entirely on the CRT screen now
+   (src/scene/tvScreen.js), so the glow (real bloom, src/scene/tvScene.js)
+   is what reads against real black instead of competing with a lit page. ---------- */
 #bg{
   position:fixed; inset:0; z-index:0;
-  background:
-    linear-gradient(180deg,
-      hsl(var(--mood-hue) 48% calc(39% + var(--mood-warmth) * 4%)) 0%,
-      hsl(var(--mood-hue) 50% calc(41% + var(--mood-warmth) * 5%)) 44%,
-      hsl(calc(var(--mood-hue) + 18) 55% calc(51% + var(--mood-warmth) * 8%)) 72%,
-      hsl(calc(var(--mood-hue) + 34) 62% calc(66% + var(--mood-warmth) * 9%)) 100%);
+  background:#030202;
 }
 #vignette{
   position:fixed; inset:0; z-index:1; pointer-events:none;
-  background:radial-gradient(130% 100% at 50% 42%, transparent 55%, rgba(60,10,4,.28) 100%);
+  background:radial-gradient(60% 55% at 50% 46%, rgba(90,40,16,.10), transparent 68%);
 }
 
 /* ---------- PROGRESS ---------- */

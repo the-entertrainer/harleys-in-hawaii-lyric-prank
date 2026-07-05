@@ -24,6 +24,8 @@
  *                      alive without ever leaving its pose
  *  - `mood`            background hue/warmth crossfade between scenes
  *  - `caption`         the pinned top caption's one-time fade-in
+ *  - `camera`          shot cuts + slow dolly drift + a close-up punch-in
+ *                      on each scene's emotional (script) word
  *
  * The word-by-word typewriter reveal deliberately does NOT live here — a
  * letter appearing at its sung timestamp is discrete state, not a tweened
@@ -34,7 +36,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SCENES, sceneEnd, CAPTION, TOTAL_DURATION } from '../src/lyrics-data.mjs';
+import { LYRICS, SCENES, sceneEnd, CAPTION, TOTAL_DURATION } from '../src/lyrics-data.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -120,6 +122,71 @@ SCENES.forEach((scene, i) => {
     addObject(`anchor-${i}`, a);
   }
 });
+
+// Camera — a small repertoire of shots (wide, two three-quarter angles, a
+// low angle) cycled scene to scene so consecutive scenes never repeat the
+// same framing, cut to at each scene boundary, with a slow continuous
+// dolly drift during the hold (matching the song's own slow rhythm) and a
+// push-in to a tight close-up on each scene's emotional/script word — the
+// moment the on-screen text most deserves the emphasis.
+{
+  const DEG = Math.PI / 180;
+  const SHOTS = [
+    { yaw: 0, pitch: 0, distanceMul: 1.00 },
+    { yaw: -16 * DEG, pitch: 3 * DEG, distanceMul: 0.90 },
+    { yaw: 15 * DEG, pitch: -2 * DEG, distanceMul: 0.92 },
+    { yaw: -6 * DEG, pitch: -7 * DEG, distanceMul: 0.97 },
+  ];
+  const CUT = 0.06; // near-instant swap between two keyframes = a hard cut
+  const cam = {};
+
+  SCENES.forEach((scene, i) => {
+    const start = scene.enter;
+    const end = sceneEnd(i);
+    const shot = SHOTS[i % SHOTS.length];
+
+    if (i === 0){
+      pushKf(cam, 0, shot);
+    } else {
+      pushKf(cam, start - CUT, SHOTS[(i - 1) % SHOTS.length]);
+      pushKf(cam, start, shot);
+    }
+
+    // Slow dolly during the hold — a gentle continued push driven by the
+    // scene's own duration rather than a fixed rate, so it always resolves
+    // by the time the next cut arrives.
+    const hold = end - start;
+    if (hold > 4){
+      pushKf(cam, start + hold * 0.6, {
+        yaw: shot.yaw + (i % 2 === 0 ? 1 : -1) * 2.5 * DEG,
+        pitch: shot.pitch,
+        distanceMul: Math.max(shot.distanceMul - 0.07, 0.8),
+      });
+    }
+
+    // Push in tight on the scene's emotional word (the connected-script
+    // slot — "sweetheart," "glowing," "moonlight," etc.) while it inks on,
+    // then ease back out for the sub-lines that follow.
+    const scriptSlot = scene.slots.find(s => s.type === 'script');
+    if (scriptSlot){
+      const word = LYRICS[scriptSlot.line].words[scriptSlot.from ?? 0];
+      const wordEnd = Math.max(word.e, word.s + 1.0);
+      pushKf(cam, word.s - 0.35, shot);
+      pushKf(cam, word.s + 0.2, { yaw: shot.yaw * 0.25, pitch: shot.pitch * 0.25, distanceMul: 0.52 });
+      pushKf(cam, wordEnd + 0.6, { yaw: shot.yaw * 0.25, pitch: shot.pitch * 0.25, distanceMul: 0.52 });
+      pushKf(cam, wordEnd + 1.5, shot);
+    }
+  });
+
+  // After the last lyric, hold, then a slow final push-in as the closing
+  // "Made with love" card takes over the screen (the sequence's extra 5s
+  // of runway past TOTAL_DURATION exists for exactly this).
+  const lastShot = SHOTS[(SCENES.length - 1) % SHOTS.length];
+  pushKf(cam, TOTAL_DURATION, lastShot);
+  pushKf(cam, TOTAL_DURATION + 4, { yaw: 0, pitch: 0, distanceMul: 0.62 });
+
+  addObject('camera', cam);
+}
 
 // Background mood — hold each scene's hue, then ramp across the crossfade
 // window into the next scene's hue, so the gradient shift reads as part of

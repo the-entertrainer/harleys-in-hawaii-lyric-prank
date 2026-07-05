@@ -10,7 +10,6 @@ const audio = document.getElementById('track');
 const tvCanvas = document.getElementById('tv-canvas');
 const progressFill = document.getElementById('progress-fill');
 const playBtn = document.getElementById('play-btn');
-const root = document.documentElement;
 
 // ---------------------------------------------------------------------
 // Shared state, written by Theatre.js onValuesChange callbacks in main()
@@ -65,23 +64,16 @@ async function main(){
   const sheet = project.sheet('Lyrics');
   await project.ready;
 
-  // Quantized: the page-background gradient only re-renders when the hue
-  // moves a visible step, not every frame of a crossfade ramp.
-  let lastHue = -1, lastWarmth = -1;
+  // The mood hue/warmth only feeds the TV screen's own broadcast wash now
+  // (the page background is a fixed dark room around the glowing TV).
   const moodObj = sheet.object('mood', { hue: SCENES[0].hue, warmth: SCENES[0].warmth });
-  moodObj.onValuesChange(v => {
-    moodHue = v.hue;
-    moodWarmth = v.warmth;
-    const hue = Math.round(v.hue * 2) / 2;
-    const warmth = Math.round(v.warmth * 40) / 40;
-    if (hue === lastHue && warmth === lastWarmth) return;
-    lastHue = hue; lastWarmth = warmth;
-    root.style.setProperty('--mood-hue', hue);
-    root.style.setProperty('--mood-warmth', warmth);
-  });
+  moodObj.onValuesChange(v => { moodHue = v.hue; moodWarmth = v.warmth; });
 
   const captionObj = sheet.object('caption', { opacity: 0 });
   captionObj.onValuesChange(v => { captionOpacity = v.opacity; });
+
+  const cameraObj = sheet.object('camera', { yaw: 0, pitch: 0, distanceMul: 1 });
+  cameraObj.onValuesChange(v => { tvScene.setShot(v); });
 
   SCENES.forEach((scene, i) => {
     const group = sheet.object(`scene-${i}`, { opacity: i === 0 ? 1 : 0, y: 0 });
@@ -107,10 +99,17 @@ async function main(){
   function frame(now){
     const dt = Math.min((now - lastNow) / 1000, 0.1);
     lastNow = now;
-    const t = audio.currentTime;
+    // audio.currentTime freezes once the track ends, but the camera's
+    // finale push-in (and the card's fade-in) needs the sequence to keep
+    // advancing past TOTAL_DURATION — driven by real elapsed time instead
+    // once 'ended' fires (see the extra 5s of sequence runway authored in
+    // tools/build-theatre-state.mjs).
+    const t = finaleStartTime !== null
+      ? TOTAL_DURATION + (now - finaleStartTime) / 1000
+      : audio.currentTime;
     sheet.sequence.position = t;
     updateParallax(t, dt, tvScene);
-    progressFill.style.width = (t / TOTAL_DURATION * 100).toFixed(2) + '%';
+    progressFill.style.width = (Math.min(t, TOTAL_DURATION) / TOTAL_DURATION * 100).toFixed(2) + '%';
 
     if (finaleStartTime !== null){
       finaleOpacity = Math.min((now - finaleStartTime) / 900, 1);
