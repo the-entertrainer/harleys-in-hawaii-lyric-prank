@@ -215,16 +215,14 @@ body.inplates #meta-caption{ display:inline; }
 .plate.on .figwrap{ opacity:1; transform:none; }
 .figwrap img{
   width:100%; height:auto; max-height:46dvh; object-fit:contain; display:block;
-  filter:grayscale(1) contrast(1.05);
+  /* figures are pre-processed letterpress-ink-on-transparent; multiply
+     beds the ink into the paper grain */
   mix-blend-mode:multiply;
+  opacity:.92;
 }
 .figwrap.sm{ width:min(46%, 24vw); }
 .figwrap.md{ width:min(78%, 32vw); }
 .figwrap.lg{ width:min(94%, 36vw); }
-/* light subjects (pearls, dove, ring) need more ink to print on paper;
-   near-black ones (the red rose) need lifting so the plate keeps detail */
-.figwrap.deep img{ filter:grayscale(1) contrast(1.24) brightness(.74); }
-.figwrap.lift img{ filter:grayscale(1) brightness(2.1) contrast(.92); }
 .figcap{
   display:flex; align-items:center; justify-content:center; gap:.9em;
   margin-top:clamp(8px, 1.6vh, 16px);

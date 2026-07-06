@@ -56,30 +56,43 @@ the ink-editorial redesign. See git history if you need the
 
 ## Photographic cutouts
 
-Every plate's `fig.img` in `PLATES` (`src/lyrics-data.mjs`) is a **real
-photograph**, not clip art or an illustration: licensed from Adobe Stock's
-free tier, then background-removed with the Adobe Photoshop API
-(`image_remove_background`) into a genuine transparent-alpha PNG. In the
-current ink-editorial build each one is printed into the paper as that
-plate's figure — grayscale + `mix-blend-mode: multiply` (see
-`.figwrap img` in `src/style.css`), captioned like a book plate
-(`FIG. II — GRAMOPHONE`).
+### Current build: public-domain ink illustrations (`public/assets/figures/`)
 
-| File | Adobe Stock ID | Search term | Used for |
+Every plate's `fig.img` in `PLATES` (`src/lyrics-data.mjs`) is a
+**public-domain ink illustration**, chosen for the *meaning* of the line
+being sung on that plate and for the ink-on-paper aesthetic (photographic
+cutouts, however well toned, still read as photographs pasted onto the
+sheet). All nine come from a single archive so the whole set is one
+hand: the **Pearson Scott Foresman** donation on Wikimedia Commons —
+single-subject textbook line drawings, explicitly released into the
+public domain by the publisher. Each was processed (grayscale →
+autocontrast → white-margin trim → letterpress-ink-on-transparent-alpha
+WebP, script in git history) and is printed into the paper with
+`mix-blend-mode: multiply`.
+
+| File | Source (Wikimedia Commons) | License | Plate — the line it answers |
 |---|---|---|---|
-| `gramophone.png` | — ([OnlyGFX](https://www.onlygfx.com/vintage-gramophone-png-transparent/), free for personal + commercial use, no attribution required) | — | Plate II (The Chorus) |
-| `candle.png` | 76945172 | retro candlestick with candle isolated | Plate III (The Love Light) |
-| `rotary-phone.png` | 292444167 | old black rotary telephone isolated | Plate IV (Chorus, again — "let me call you") |
-| `dove.png` | 132973260 | white dove flying symbol of love | Plate V (The Verse · Dreaming) |
-| `pearl-necklace.png` | 130138331 | white pearl necklace | Plate VI (The Verse · Moonlight — "silvery") |
-| `typewriter.png` | 252116692 | old retro vintage typewriter, black | Plate VII (A Land of Love — love letters) |
-| `rose-bouquet.png` | 449968571 | bunch of rosy roses isolated | Plate VIII (The Reprise) |
-| `ring.png` | 174404055 | diamond engagement wedding ring isolated | Plate IX (The Love Light, again) |
-| `rose.png` | 301702947 | red rose isolated | Plate X (The Finale) |
-| `vinyl.png` | 566623398 | vinyl record isolated on white | (licensed; unused in the current edition — the cover is type-only) |
-| `key.png` | 373681935 | old key isolated, clipping path | (licensed; unused in the current edition) |
-| `camera.png` | 552059051 | vintage camera isolated on white | (licensed; unused in the current edition) |
-| `watch.png` | 315464404 | vintage pocket watch isolated on white | (licensed; unused in the current edition) |
+| `bell.webp` | [File:Bell (Hand) (PSF).png](https://commons.wikimedia.org/wiki/File:Bell_(Hand)_(PSF).png) | Public domain | II The Chorus — "let me *call* you" |
+| `sconce.webp` | [File:Sconce 2 (PSF).png](https://commons.wikimedia.org/wiki/File:Sconce_2_(PSF).png) | Public domain | III The Love Light — a lit wall-light |
+| `lyre.webp` | [File:Lyre (PSF).png](https://commons.wikimedia.org/wiki/File:Lyre_(PSF).png) | Public domain | IV Chorus, again — the serenade |
+| `clouds.webp` | [File:Cumulus cloud (PSF).png](https://commons.wikimedia.org/wiki/File:Cumulus_cloud_(PSF).png) | Public domain | V Dreaming — "when the skies are blue, when they're gray" |
+| `moon.webp` | [File:Moon (PSF).png](https://commons.wikimedia.org/wiki/File:Moon_(PSF).png) | Public domain | VI Moonlight — "when the silvery moonlight gleams" |
+| `turtle-dove.webp` | [File:Turtle Dove (PSF).png](https://commons.wikimedia.org/wiki/File:Turtle_Dove_(PSF).png) | Public domain | VII A Land of Love — the devoted turtledove |
+| `quill.webp` | [File:Quill (PSF).png](https://commons.wikimedia.org/wiki/File:Quill_(PSF).png) | Public domain | VIII The Reprise — "let me hear you whisper" (the whisper, written) |
+| `lantern.webp` | [File:Lantern (PSF).png](https://commons.wikimedia.org/wiki/File:Lantern_(PSF).png) | Public domain | IX The Love Light, again — a hand carrying the light |
+| `rose.webp` | [File:Rose Flower (PSF).png](https://commons.wikimedia.org/wiki/File:Rose_Flower_(PSF).png) | Public domain | X The Finale — a single rose |
+
+### Retired: the Adobe Stock photo cutouts
+
+Earlier builds used real photographs (licensed from Adobe Stock's free
+tier, background-removed with the Adobe Photoshop API): gramophone (that
+one from [OnlyGFX](https://www.onlygfx.com/vintage-gramophone-png-transparent/)),
+candle (Stock 76945172), rotary phone (292444167), dove (132973260),
+pearl necklace (130138331), typewriter (252116692), rose bouquet
+(449968571), ring (174404055), rose (301702947), vinyl (566623398), key
+(373681935), camera (552059051), pocket watch (315464404). They were
+retired from the ink-editorial edition (files removed; recoverable from
+git history) — the licenses remain valid should any come back.
 
 One additionally-licensed cutout (`love-letter.png`, Adobe Stock 611879443)
 was removed: its background removal kept the whole rectangular flat-lay

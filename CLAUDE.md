@@ -469,3 +469,18 @@ red wax-seal play button. Lessons:
   `tools/smoke-test-page.mjs` waits on that flag. Self-hosted fonts are
   what make headless screenshots typographically truthful in this sandbox
   (its Playwright Chromium cannot reach external hosts at all).
+
+- **Figure-sourcing addendum (the engraving pass):** the grayscale photo
+  cutouts were replaced on request with public-domain ink illustrations
+  matched to each plate's lyric. What worked: **Wikimedia Commons' Pearson
+  Scott Foresman archive** (search `<subject> PSF` via the plain
+  `api.php` generator=search JSON API — fully curl-able) is a large,
+  single-style, genuinely-PD set of single-subject line drawings, which
+  solves both the "matches the ink aesthetic" and the "nine figures read
+  as one hand" problems at once. What didn't: Adobe Stock's free tier has
+  essentially no vintage engravings (54–79 total hits of noise per
+  query), and Old Book Illustrations' search is JS-rendered (invisible to
+  curl, unreachable by this sandbox's Playwright). Verify picks visually
+  via a PIL contact sheet before wiring in — several "obvious" titles
+  were wrong (PSF's `Candle` is a birthday cake; its `Phonograph` is a
+  1950s record player; `Crescent 1` has text labels baked in).

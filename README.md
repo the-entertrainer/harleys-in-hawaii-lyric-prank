@@ -33,12 +33,17 @@ only red on the page.
   keyword arrives as an ink wipe plus a hand-drawn swash underline
   animated by `stroke-dashoffset`. All three are pure CSS transitions
   toggled by one per-frame timestamp comparison.
-- **Ink-on-paper graphics with zero downloads.** Paper grain is an inline
-  SVG `feTurbulence` data URI; the trim, crop marks and rules are CSS
-  borders; the photographic figures are the project's licensed Adobe Stock
-  cutouts printed as plates (`grayscale` + `mix-blend-mode: multiply`,
-  with per-subject `deep`/`lift` tone classes so white pearls and a
-  near-black rose both keep detail on paper).
+- **Figures that mean the line.** Each plate's figure is a public-domain
+  ink illustration chosen for the lyric being sung — the hand-bell for
+  "let me *call* you," a lit sconce for "the love light," a lyre for the
+  chorus reprise, cumulus skies for "blue… gray," a stippled full moon
+  for "silvery moonlight," a turtledove for "a land of love," a man
+  writing for "hear you whisper," a carried lantern, a single engraved
+  rose. All nine come from one archive (Pearson Scott Foresman, Wikimedia
+  Commons) so the set reads as one hand, processed to
+  letterpress-ink-on-transparent and multiply-blended into the paper.
+  Paper grain is an inline SVG `feTurbulence` data URI; trim, crop marks
+  and rules are CSS borders.
 - **Typography is the design.** Instrument Serif (display roman + the
   blue italic "written" voice), Schibsted Grotesk (labels, small caps),
   Fragment Mono (timecode, folios, figure captions) — self-hosted latin
@@ -65,7 +70,7 @@ src/
   style.css                     the whole design system (tokens, plates, reveals, responsive)
   lyrics-data.mjs                word timing + PLATES editorial mapping (single source of truth)
 public/
-  assets/photo/                  licensed, background-removed photo cutouts (see ATTRIBUTION.md)
+  assets/figures/                public-domain ink illustrations, one per plate (see ATTRIBUTION.md)
   fonts/                         self-hosted Instrument Serif / Schibsted Grotesk / Fragment Mono
   audio/                         the mp3 + its own README
 tools/

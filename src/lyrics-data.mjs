@@ -5,10 +5,8 @@
  * word's — comes from running faster-whisper (word-level timestamps)
  * directly on audio/let-me-call-you-sweetheart.mp3, a 1924 Jubileers
  * vocal-quartet recording of the public-domain 1910 song "Let Me Call You
- * Sweetheart". See ATTRIBUTION.md for the full method. This module is
- * imported by both tools/build-theatre-state.mjs (which authors the
- * Theatre.js keyframes from it) and src/main.js (which plays it back), so
- * the two never drift apart.
+ * Sweetheart". See ATTRIBUTION.md for the full method. src/main.js builds
+ * the whole edition (word cues, plates, figures) from this module alone.
  *
  * Visual model — "The Sweetheart Edition": the song is typeset live as a
  * fine-press love letter. The viewport is a sheet of paper with a printed
@@ -16,8 +14,8 @@
  * its section boundaries; each plate is one editorial spread whose display
  * headline rises word-by-word out of masked slots at the words' real sung
  * timestamps, whose emotional keyword inks itself on in italic (clip-path
- * wipe + a hand-drawn swash underline), and whose licensed photographic
- * cutout is printed into the paper as an ink-plate figure. A finished
+ * wipe + a hand-drawn swash underline), and whose public-domain ink
+ * illustration is printed into the paper as a captioned figure. A finished
  * spread HOLDS like a printed page until the next plate is pulled.
  */
 
@@ -42,11 +40,12 @@ export const LYRICS = [
   { start: 177.98, end: 179.38, section:'Outro', fx:'fx-finale', words:[{w:"Let",s:177.98,e:178.12}, {w:"me",s:178.12,e:178.26}, {w:"hear",s:178.26,e:178.40}, {w:"you",s:178.40,e:178.54}, {w:"whisper",s:178.54,e:178.68}, {w:"that",s:178.68,e:178.82}, {w:"you",s:178.82,e:178.96}, {w:"love",s:178.96,e:179.10}, {w:"me",s:179.10,e:179.24}, {w:"too",s:179.24,e:179.38}] },
 ];
 
-// Every decorative image is a real, licensed, transparent-background PNG —
-// a genuine photograph with its background removed (Adobe Stock + Photoshop
-// API cutout), not an illustration. See ATTRIBUTION.md for each source.
+// Every plate figure is a public-domain ink illustration (the Pearson
+// Scott Foresman archive on Wikimedia Commons — single-subject line
+// drawings, one consistent hand across the whole set), processed into
+// letterpress-ink-on-transparent WebP by tools noted in ATTRIBUTION.md.
 export function assetPath(name){
-  return `assets/photo/${name}`;
+  return `assets/figures/${name}`;
 }
 
 // The sender's own aside — the standfirst printed under the cover title,
@@ -77,56 +76,59 @@ export const CAPTION = {
  *    whispered outro tag).
  * Words accumulate as sung; nothing is removed until the plate turns.
  *
- * `fig` is the plate's one photographic cutout, printed as an ink plate
- * (grayscale + multiply, see style.css). `size` picks a bounded width
- * tier — the figure lives in its own grid column (portrait: its own row),
- * so it geometrically cannot collide with the text on any viewport.
+ * `fig` is the plate's one ink illustration — chosen for the *meaning* of
+ * the plate's line (the call, the love light, the serenade, the skies,
+ * the silvery moon, the turtle dove, the whisper written, the lantern, a
+ * single rose) — printed into the paper via multiply blend (style.css).
+ * `size` picks a bounded width tier — the figure lives in its own grid
+ * column (portrait: its own row), so it geometrically cannot collide
+ * with the text on any viewport.
  */
 export const PLATES = [
   { id:'prologue', enter:0, roman:'I', section:'Prologue', cover:true,
     spoken:[ { line:0 }, { line:1 } ] },
   { id:'chorus', enter:13.4, roman:'II', section:'The Chorus',
-    fig:{ img:'gramophone.png', size:'lg', caption:'Gramophone' },
+    fig:{ img:'bell.webp', size:'md', caption:'The Call' },
     headline:{ line:2, from:0, to:4 },            // Oh, let me call you
     kw:{ line:2, at:5 },                          // sweetheart
     deck:[ { line:2, from:6, to:10 }, { line:3, from:0, to:9 } ] },
   { id:'love-light', enter:34.22, roman:'III', section:'The Love Light',
-    fig:{ img:'candle.png', size:'sm', caption:'Candlelight' },
+    fig:{ img:'sconce.webp', size:'sm', caption:'The Love Light' },
     headline:{ line:4, from:0, to:3 },            // Keep the love light
     kw:{ line:4, at:4 },                          // glowing
     deck:[ { line:4, from:5, to:9 } ] },
   { id:'chorus-b', enter:43.32, roman:'IV', section:'Chorus, again',
-    fig:{ img:'rotary-phone.png', size:'lg', caption:'Rotary telephone' },
+    fig:{ img:'lyre.webp', size:'md', caption:'The Serenade' },
     headline:{ line:5, from:0, to:3 },            // Let me call you
     kw:{ line:5, at:4 },                          // sweetheart
     deck:[ { line:5, from:5, to:9 } ] },
   { id:'dreaming', enter:60.06, roman:'V', section:'The Verse · Dreaming',
-    fig:{ img:'dove.png', size:'md', tone:'deep', caption:'Dove' },
+    fig:{ img:'clouds.webp', size:'lg', caption:'Skies, Blue or Gray' },
     headline:{ line:6, from:0, to:2 },            // I am dreaming
     kw:{ line:6, at:3, kwAfter:true },            // dear
     deck:[ { line:6, from:4, to:8 }, { line:7, from:0, to:8 } ] },
   { id:'moonlight', enter:79.94, roman:'VI', section:'The Verse · Moonlight',
-    fig:{ img:'pearl-necklace.png', size:'lg', tone:'deep', caption:'Pearls' },
+    fig:{ img:'moon.webp', size:'md', caption:'The Silvery Moon' },
     headline:{ line:8, from:0, to:2 },            // When the silvery
     kw:{ line:8, at:3 },                          // moonlight
     deck:[ { line:8, from:4, to:10 } ] },
   { id:'land-of-love', enter:94.4, roman:'VII', section:'A Land of Love',
-    fig:{ img:'typewriter.png', size:'lg', caption:'Typewriter' },
+    fig:{ img:'turtle-dove.webp', size:'lg', caption:'The Turtle Dove' },
     headline:{ line:9, from:0, to:3 },            // In a land of
     kw:{ line:9, at:4, kwAfter:true },            // love
     deck:[ { line:9, from:5, to:6 }, { line:10, from:0, to:5 } ] },
   { id:'reprise', enter:112.02, roman:'VIII', section:'The Reprise',
-    fig:{ img:'rose-bouquet.png', size:'md', caption:'Roses' },
+    fig:{ img:'quill.webp', size:'md', caption:'The Whisper, Written' },
     headline:{ line:11, from:0, to:3 },           // Let me call you
     kw:{ line:11, at:4 },                         // sweetheart
     deck:[ { line:11, from:5, to:9 }, { line:12, from:0, to:9 } ] },
   { id:'love-light-2', enter:133.12, roman:'IX', section:'The Love Light, again',
-    fig:{ img:'ring.png', size:'sm', tone:'deep', caption:'The Ring' },
+    fig:{ img:'lantern.webp', size:'sm', caption:'The Lantern' },
     headline:{ line:13, from:0, to:3 },           // Keep the love light
     kw:{ line:13, at:4 },                         // glowing
     deck:[ { line:13, from:5, to:9 } ] },
   { id:'finale', enter:143.32, roman:'X', section:'The Finale',
-    fig:{ img:'rose.png', size:'md', tone:'lift', caption:'A single rose' },
+    fig:{ img:'rose.webp', size:'md', caption:'A Single Rose' },
     headline:{ line:14, from:0, to:3 },           // Let me call you
     kw:{ line:14, at:4 },                         // sweetheart
     deck:[ { line:14, from:5, to:9 } ],
