@@ -3,3 +3,4 @@ node_modules/
 dist/
 tools/.*.generated.html
 tools/.shot-*.png
+tools/screens/

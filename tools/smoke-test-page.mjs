@@ -1,82 +1,84 @@
-// Drives the real page (served by `npm run dev`, default http://127.0.0.1:5183)
-// through headless Chromium, seeking through the song and screenshotting a
-// few points to sanity-check the TV broadcast staging end to end.
-// Not part of the shipped site.
+/**
+ * Screenshots the real page in headless Chromium at a set of timestamps —
+ * one mid-song moment per letter page (mid-word, so ink fill states are
+ * visible), plus the sealed cover.
+ *
+ * Deterministic by construction: the audio stays PAUSED and every shot
+ * seeks with window.__seek(t) (word/page state is a pure function of t),
+ * with CSS transitions/animations disabled — wall-clock time can't skew a
+ * shot. (An earlier version let the track play between shots and waited
+ * on a CDP poll; in this sandbox that poll can take ~30s, so every shot
+ * landed half a minute late.) Set SMOKE_DRIPS=1 to instead let each shot
+ * play in real time for ~2.5s first so ink drips are visible.
+ *
+ * Usage: SMOKE_URL=http://localhost:5173 [SMOKE_MOBILE=1] [SMOKE_DRIPS=1] node tools/smoke-test-page.mjs
+ */
 import { chromium } from 'playwright';
+import { mkdirSync } from 'node:fs';
 
-const BASE_URL = process.env.SMOKE_URL || 'http://127.0.0.1:5183';
-const VIEWPORT = process.env.SMOKE_MOBILE
-  ? { width: 390, height: 660 }
-  : { width: 1400, height: 900 };
+const URL = process.env.SMOKE_URL || 'http://localhost:5173';
+const MOBILE = !!process.env.SMOKE_MOBILE;
+const DRIPS = !!process.env.SMOKE_DRIPS;
+const OUT = new globalThis.URL('./screens/', import.meta.url).pathname;
+mkdirSync(OUT, { recursive: true });
 
-// Timestamps chosen to hit each broadcast card mid-composition: intro
-// banter, chorus (the reference scene), a mid-word moment, verse,
-// moonlight, reprise, finale hold.
+// t=-1 means "before the seal is pressed"
 const SHOTS = [
-  [5, 'intro'],
-  [16.2, 'chorus-typing'],
-  [21, 'chorus-full'],
-  [38, 'love-light'],
-  [47, 'chorus-b'],
-  [65, 'dreaming'],
-  [86, 'moonlight'],
-  [99, 'land-of-love'],
-  [117, 'reprise'],
-  [150, 'finale-hold'],
+  ['cover', -1],
+  ['salutation', 6.5],
+  ['chorus-a-mid', 20.2],
+  ['chorus-a-late', 29.5],
+  ['love-light', 38.5],
+  ['chorus-b', 48.0],
+  ['dreaming', 72.0],
+  ['moonlight', 86.0],
+  ['land-of-love', 103.0],
+  ['reprise', 118.6],
+  ['love-light-2', 138.0],
+  ['finale', 149.0],
+  ['closing', 172.0],
+  ['whisper-outro', 179.0],
 ];
 
-// This sandbox's headless Chromium can silently screenshot a blank frame
-// of real, correctly-rendering WebGL canvas content if the only wait
-// beforehand is a bare timeout (see CLAUDE.md Update 3) — interleaving a
-// throwaway CDP poll after the timeout reliably avoids it.
-async function settle(page, ms){
-  await page.waitForTimeout(ms);
-  await page.waitForFunction(() => false, { timeout: 400, polling: 50 }).catch(() => {});
-}
+const browser = await chromium.launch({
+  executablePath: '/opt/pw-browsers/chromium',
+  args: ['--autoplay-policy=no-user-gesture-required'],
+});
+const page = await browser.newPage({
+  viewport: MOBILE ? { width: 390, height: 844 } : { width: 1280, height: 800 },
+  deviceScaleFactor: MOBILE ? 2 : 1,
+});
+page.on('console', m => { if (m.type() === 'error') console.error('[console]', m.text()); });
+page.on('pageerror', e => console.error('[pageerror]', e.message));
 
-async function main(){
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
-  const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: process.env.SMOKE_MOBILE ? 3 : 2 });
-  const errors = [];
-  page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
-  page.on('pageerror', err => { errors.push(String(err)); console.error('[pageerror]', err); });
+await page.goto(URL);
+await page.waitForFunction(() => window.__fontsLoaded === true, { timeout: 15000 });
 
-  await page.goto(BASE_URL, { waitUntil: 'load' });
-  await settle(page, 1400);
-  await page.screenshot({ path: 'tools/.shot-initial.png' });
-
-  // Click play once to start the render loop (which redraws from
-  // audio.currentTime every frame regardless of play state — see
-  // src/main.js's frame()), then immediately pause: this sandbox can be
-  // heavily loaded enough that real wall-clock time between steps varies a
-  // lot, and with audio left playing that let currentTime drift tens of
-  // seconds past each intended seek target by the time of the screenshot.
-  // Paused, currentTime only moves when we explicitly set it.
-  await page.evaluate(() => {
-    const audio = document.getElementById('track');
-    audio.muted = true;
-    document.getElementById('play-btn').click();
-    return audio.play().then(() => audio.pause());
-  });
-
-  for (const [t, name] of SHOTS){
-    await page.evaluate((time) => { document.getElementById('track').currentTime = time; }, t);
-    await settle(page, 200);
-    const actual = await page.evaluate(() => document.getElementById('track').currentTime);
-    console.log(`shot ${name}: target=${t} actual=${actual.toFixed(2)}`);
-    await page.screenshot({ path: `tools/.shot-t${t}-${name}.png` });
+let opened = false;
+for (const [name, t] of SHOTS){
+  const started = Date.now();
+  if (t >= 0){
+    if (!opened){
+      // force: the seal has an infinite breathe animation, so Playwright's
+      // "element is stable" actionability check would wait forever
+      await page.click('#seal', { force: true });
+      await page.evaluate(() => document.getElementById('track').pause());
+      if (!DRIPS){
+        await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation: none !important; }' });
+      }
+      opened = true;
+    }
+    await page.evaluate((tt) => window.__seek(tt), t);
+    if (DRIPS){
+      await page.evaluate(() => document.getElementById('track').play());
+      await page.waitForTimeout(2500);
+      await page.evaluate(() => document.getElementById('track').pause());
+    }
   }
-
-  await page.evaluate(() => {
-    const audio = document.getElementById('track');
-    audio.currentTime = audio.duration - 0.05;
-  });
-  await settle(page, 400);
-  await page.evaluate(() => document.getElementById('track').dispatchEvent(new Event('ended')));
-  await settle(page, 1600);
-  await page.screenshot({ path: 'tools/.shot-finale-card.png' });
-
-  console.log('ERRORS:', errors.length ? errors : 'none');
-  await browser.close();
+  const ct = t >= 0 ? await page.evaluate(() => document.getElementById('track').currentTime) : -1;
+  const file = `${OUT}${MOBILE ? 'm-' : ''}${DRIPS ? 'd-' : ''}${name}.png`;
+  await page.screenshot({ path: file });
+  console.log(`shot ${name} requested=${t} actual=${ct.toFixed ? ct.toFixed(1) : ct} took=${Date.now() - started}ms`);
 }
-main().catch(e => { console.error(e); process.exit(1); });
+
+await browser.close();

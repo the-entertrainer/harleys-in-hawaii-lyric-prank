@@ -3,33 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>My Sweetheart</title>
-<meta name="description" content="A 1910 love song, playing on a vintage TV. One button. Press play.">
-<meta name="theme-color" content="#a92c17">
-<link rel="preload" href="/fonts/titan-one-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/cookie-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/oswald-500.woff2" as="font" type="font/woff2" crossorigin>
+<title>for you</title>
+<meta name="description" content="A little letter, sung in ink.">
+<meta name="theme-color" content="#efe2c8">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%23efe2c8"/><text x="16" y="23" font-size="18" text-anchor="middle">❤️</text></svg>'>
+<link rel="preload" href="/fonts/cormorant-garamond-500.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/cormorant-garamond-500-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/great-vibes-400.woff2" as="font" type="font/woff2" crossorigin>
 </head>
-<body>
+<body class="preload">
 
-<div id="bg"></div>
-<div id="vignette"></div>
-<div id="progress"><div id="progress-fill"></div></div>
+<!-- rough ink edges: a tiny displacement everything written passes through -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <filter id="inkbleed" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="1" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.4"/>
+  </filter>
+</svg>
 
-<audio id="track" src="audio/let-me-call-you-sweetheart.mp3" preload="metadata"></audio>
+<audio id="track" src="audio/let-me-call-you-sweetheart.mp3" preload="auto"></audio>
 
-<main id="stage">
-  <canvas id="tv-canvas"></canvas>
-</main>
+<div id="sheet">
+  <div id="paper" aria-hidden="true"></div>
+  <div id="frame" aria-hidden="true"><span>&#10086;</span><span>&#10086;</span><span>&#10086;</span><span>&#10086;</span></div>
+  <main id="letter" aria-live="polite"></main>
+  <button id="seal" aria-label="Open the letter and play">
+    <span class="seal-heart" aria-hidden="true">&#10084;</span>
+  </button>
+  <p id="seal-hint" aria-hidden="true"></p>
+  <div id="quill-line" aria-hidden="true"><i id="quill-fill"></i></div>
+</div>
 
-<a id="tv-credit" href="https://sketchfab.com/3d-models/tv-old-tv-retro-tv-f13b9a45c0d649dc90ebac5f7717cebf" target="_blank" rel="noopener">TV model by fan7774 (CC BY-NC)</a>
-
-<button id="play-btn" aria-label="Play">
-  <span class="icon-wrap">
-    <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-    <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
-  </span>
-</button>
+<canvas id="ink-canvas" aria-hidden="true"></canvas>
 
 <script type="module" src="/src/main.js"></script>
 </body>

@@ -388,3 +388,20 @@ Let’s make the beat ride perfectly — whether the user does it themselves or 
 *Document prepared for implementation. All design decisions prioritize delight, performance on mobile, and that perfect "Naveen touch" of mathematical elegance + warm personality.*
 
 **Next Step Recommendation:** Create the Vite + Tailwind repo, drop in the MP3, implement Phase 1 core sync, then we iterate on the animations and copy together.
+
+---
+
+# Update: the ink-letter build (current)
+
+Everything above is preserved history. The shipped design is now a
+handwritten love letter: aged cream paper with fold creases and a
+stationery rule, a wax seal that opens the letter, each song section one
+"page" with an oval photo cameo (rose / candle / key / dove / pearls /
+bouquet / pocket watch / ring — romantic register, never literal
+word-matching), body words filling with sepia ink top-to-bottom at their
+real sung timestamps, script keywords (Great Vibes) writing themselves
+across in oxblood, wet words shedding running ink drips on a canvas
+overlay, "my sweetheart," / "yours, always ❤" as salutation and sign-off,
+and the whispered outro as a postscript. No song title, no names, no
+credits on the page itself. Three.js/Theatre.js removed; DOM + one 2D
+canvas; see README.md and CLAUDE.md Update 4.

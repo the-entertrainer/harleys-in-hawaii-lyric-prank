@@ -422,3 +422,52 @@ the project for this (it had been removed in the prior pivot). Lessons:
   `<script type="module">` test page with no framework, testing one
   variable at a time) before suspecting your own Three.js code when a
   canvas screenshots blank but the same JS logs prove it rendered.
+
+## Update 4: the ink-letter rebuild (DOM-only again) — new lessons
+
+The TV build was replaced by a handwritten-love-letter design: aged paper,
+every sung word filling with sepia ink at its real timestamp, wet words
+shedding running ink drips (canvas), a wax-seal open, cameo photo
+medallions. Three.js and Theatre.js were removed entirely — nothing left
+to tween that isn't a pure function of `audio.currentTime`. Lessons:
+
+- **Vite dev injects `style.css` via JS *after* first paint, so any
+  "hidden until opened" chrome (`opacity: 0` + `transition`) visibly
+  animates 1 → 0 at load** — screenshots catch ghost content and it looks
+  exactly like a compositing leak (it isn't; computed opacity mid-probe
+  was 0.97 falling). Fix: `<body class="preload">` + a rule suppressing
+  all transitions under `.preload`, removed two RAFs after init. This
+  can't happen in the production build (CSS is a `<link>` in head), but
+  dev screenshots and dev UX both need the gate.
+- **A full-viewport `<canvas>` needs explicit CSS `width/height`.** A
+  replaced element ignores `inset: 0` for sizing, so a DPR-scaled backing
+  store displays at device-pixel size — everything draws at 2× and lands
+  off-target/off-screen with zero errors. Set `width: 100vw; height:
+  100dvh` (or any explicit CSS size) alongside the attribute size.
+- **In this sandbox, `page.waitForFunction` can take ~30s wall-clock
+  regardless of its timeout/polling settings** (CDP round-trip slowness —
+  the same class of weirdness as the WebGL-screenshot trap in Update 3).
+  If audio is playing during shots, every screenshot lands ~30s late and
+  the whole suite runs 7+ minutes. Fix: make screenshot suites
+  deterministic — keep audio *paused*, drive state with a seek hook that's
+  a pure function of t (`window.__seek`), inject a style tag disabling
+  transitions, and never depend on wall-clock between seek and shot.
+- **Background-clip ink fills need an em-box bias.** `background-size:
+  100% p%` on `-webkit-background-clip: text` spends the first ~20% of p
+  in the em box's empty ascender headroom, so words look like they ink
+  *late*. Map p → `16 + p*116`% (and similar for horizontal script fills)
+  so ink is visibly arriving the instant the word starts.
+- **Ink drips on paper should *run*, not fall** — bead swells at the
+  baseline, runs down decelerating as ink is spent, trail tapers and the
+  whole mark dries. Draw the trail as ONE filled tapered polygon (per-
+  segment strokes give alpha banding + round-cap knots that read as a
+  corkscrew), composite with `multiply` so ink darkens the paper grain,
+  and anchor spawn points at `rect.top + height*0.68` (the box includes
+  line-height leading — `rect.bottom` floats drips below the glyphs).
+  Fast-dry all live drips on a page transition or they hang over the next
+  page with nothing above them.
+- **Playwright's stability check spins forever on elements with infinite
+  animations** (the seal's "breathe"): `click(..., { force: true })`.
+- **Never `pkill -f` a pattern that appears in the harness's own command
+  line** (`chromium`, `pw-browsers` are both in this session's argv) — it
+  kills your own shell mid-command. Match the exact script path instead.
